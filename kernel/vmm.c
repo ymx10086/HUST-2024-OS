@@ -193,6 +193,14 @@ void user_vm_unmap(pagetable_t page_dir, uint64 va, uint64 size, int free) {
   // (use free_page() defined in pmm.c) the physical pages. lastly, invalidate the PTEs.
   // as naive_free reclaims only one page at a time, you only need to consider one page
   // to make user/app_naive_malloc to behave correctly.
-  panic( "You have to implement user_vm_unmap to free pages using naive_free in lab2_2.\n" );
+  //panic( "You have to implement user_vm_unmap to free pages using naive_free in lab2_2.\n" );
 
+  if (!free) return;
+  //获得页表项 PTE
+  pte_t *pte_containing_va = page_walk(page_dir, va, 0);
+  //找到 PTE
+  if (pte_containing_va) {                          
+    free_page(user_va_to_pa(page_dir, (void *) va));// 调用 lab2_1 中实现的函数计算 pa，回收 pa 对应的物理页
+    *pte_containing_va &= ~PTE_V;                   // 将 PTE 中的 Valid 位置 0
+  }
 }
