@@ -5,6 +5,7 @@
 #include "process.h"
 
 #define MAX_CMDLINE_ARGS 64
+typedef unsigned char u_char;
 
 // elf header structure
 typedef struct elf_header_t {
@@ -37,6 +38,40 @@ typedef struct elf_prog_header_t {
   uint64 align;  /* Segment alignment */
 } elf_prog_header;
 
+
+// ! ref: https://man7.org/linux/man-pages/man5/elf.5.html
+// section header structure
+typedef struct elf_section_header_t {
+  uint32 sh_name;      /* Section name */
+  uint32 sh_type;      /* Section type */
+  uint64 sh_flags;     /* Section flags */
+  uint64 sh_addr;      /* Section virtual address at execution */
+  uint64 sh_offset;    /* Section offset of file */
+  uint64 sh_size;      /* Section's size in bytes */
+  uint32 sh_link;      /* Section header table link which links to another section */
+  uint32 sh_info;      /* Extra information */
+  uint64 sh_addralign; /* Section address alignment constrainents */
+  uint64 sh_entsize;   /* Entry size in bytes if section holds table */
+} elf_section_header;
+
+// ! ref: https://man7.org/linux/man-pages/man5/elf.5.html
+// string and symbol tables structure
+typedef struct elf_symbol_t {
+  uint32 st_name;  /* Symbol names if nonzero */
+  u_char st_info;  /* Symbol's type and binding attributes */
+  u_char st_other; /* Symbol visibility */
+  uint16 st_shndx; /* Symbol section header table index */
+  uint64 st_value; /* Symbol value */
+  uint64 st_size;  /* Symbol size */
+} elf_symbol;
+
+#define ELF_SECTION_HEADER_SZ (sizeof(elf_section_header))
+#define ELF_SYMBOL_SZ (sizeof(elf_symbol))
+#define SHT_SYMTAB 2// symbol table
+#define SHT_STRTAB 3// string table
+#define STT_FILE 4  // symbol name is file name
+#define STT_FUNC 18
+
 #define ELF_MAGIC 0x464C457FU  // "\x7FELF" in little endian
 #define ELF_PROG_LOAD 1
 
@@ -53,10 +88,18 @@ typedef enum elf_status_t {
 typedef struct elf_ctx_t {
   void *info;
   elf_header ehdr;
+
+  // $ added @lab1_challenge1
+  char str_table[4096];
+  elf_symbol symbols[128];
+  uint64 symbol_cnt;
 } elf_ctx;
 
 elf_status elf_init(elf_ctx *ctx, void *info);
 elf_status elf_load(elf_ctx *ctx);
+
+// $ added @lab1_challenge1
+elf_status load_elf_symbol(elf_ctx *ctx);
 
 void load_bincode_from_host_elf(process *p);
 
