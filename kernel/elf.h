@@ -5,7 +5,6 @@
 #include "process.h"
 
 #define MAX_CMDLINE_ARGS 64
-typedef unsigned char u_char;
 
 // elf header structure
 typedef struct elf_header_t {
@@ -38,8 +37,8 @@ typedef struct elf_prog_header_t {
   uint64 align;  /* Segment alignment */
 } elf_prog_header;
 
-
-// ! ref: https://man7.org/linux/man-pages/man5/elf.5.html
+//  add for lab1_challenge1_backtrace
+//  support: https://man7.org/linux/man-pages/man5/elf.5.html
 // section header structure
 typedef struct elf_section_header_t {
   uint32 sh_name;      /* Section name */
@@ -54,12 +53,13 @@ typedef struct elf_section_header_t {
   uint64 sh_entsize;   /* Entry size in bytes if section holds table */
 } elf_section_header;
 
-// ! ref: https://man7.org/linux/man-pages/man5/elf.5.html
+//  add for lab1_challenge1_backtrace
+//  support: https://man7.org/linux/man-pages/man5/elf.5.html
 // string and symbol tables structure
 typedef struct elf_symbol_t {
   uint32 st_name;  /* Symbol names if nonzero */
-  u_char st_info;  /* Symbol's type and binding attributes */
-  u_char st_other; /* Symbol visibility */
+  unsigned char st_info;  /* Symbol's type and binding attributes */
+  unsigned char st_other; /* Symbol visibility */
   uint16 st_shndx; /* Symbol section header table index */
   uint64 st_value; /* Symbol value */
   uint64 st_size;  /* Symbol size */
@@ -89,16 +89,17 @@ typedef struct elf_ctx_t {
   void *info;
   elf_header ehdr;
 
-  // $ added @lab1_challenge1
+  // ! add for lab1_challenge1_backtrace
   char str_table[4096];
   elf_symbol symbols[128];
   uint64 symbol_cnt;
+  
 } elf_ctx;
 
 elf_status elf_init(elf_ctx *ctx, void *info);
 elf_status elf_load(elf_ctx *ctx);
 
-// $ added @lab1_challenge1
+//  add for lab1_challenge1_backtrace
 elf_status load_elf_symbol(elf_ctx *ctx);
 
 void load_bincode_from_host_elf(process *p);

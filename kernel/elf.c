@@ -13,7 +13,8 @@ typedef struct elf_info_t {
   process *p;
 } elf_info;
 
-// $ added @lab1_challenge1
+// ! add for lab1_challenge1_backtrace
+// claim for global
 elf_ctx g_elfloader;
 
 //
@@ -117,8 +118,10 @@ void load_bincode_from_host_elf(process *p) {
   sprint("Application: %s\n", arg_bug_msg.argv[0]);
 
   //elf loading. elf_ctx is defined in kernel/elf.h, used to track the loading process.
-  // changed for lab1_challenge1
+  // ! add for lab1_challenge1_backtrace
+  // exchanged by global variable
   // elf_ctx elfloader;
+  
   // elf_info is defined above, used to tie the elf file and its corresponding process.
   elf_info info;
 
@@ -130,21 +133,22 @@ void load_bincode_from_host_elf(process *p) {
   // init elfloader context. elf_init() is defined above.
   // if (elf_init(&elfloader, &info) != EL_OK)
   //   panic("fail to init elfloader.\n");
-  // changed for lab1_challenge1
+
+  // ! change for lab1_challenge1_backtrace
   if (elf_init(&g_elfloader, &info) != EL_OK)
     panic("fail to init g_elfloader.\n");
 
   // load elf. elf_load() is defined above.
   //if (elf_load(&elfloader) != EL_OK) panic("Fail on loading elf.\n");
-  // changed for lab1_challenge1
+  // ! change for lab1_challenge1_backtrace
   if (elf_load(&g_elfloader) != EL_OK) panic("Fail on loading elf.\n");
 
   // entry (virtual, also physical in lab1_x) address
   // p->trapframe->epc = elfloader.ehdr.entry;
-   // $ changed @lab1_challenge1
+  // ! change for lab1_challenge1_backtrace
   p->trapframe->epc = g_elfloader.ehdr.entry;
 
-  // $ added @lab1_challenge1
+   // ! add for lab1_challenge1_backtrace
   if (load_elf_symbol(&g_elfloader) != EL_OK) panic("Fail to load elf symbols.\n");
 
   // close the host spike file
@@ -153,9 +157,11 @@ void load_bincode_from_host_elf(process *p) {
   sprint("Application program entry point (virtual address): 0x%lx\n", p->trapframe->epc);
 }
 
-// $ added @lab1_challenge1
 
+ // ! change for lab1_challenge1_backtrace
 // 加载 .symtab 和 .strtab 节
+// 使用函数 uint64 elf_fpread(elf_ctx *ctx, void *dest, uint64 nb, uint64 offset)
+// 从offset这个地址中取出nb字节的数据放入到dest对应的地址中。
 elf_status load_elf_symbol(elf_ctx *ctx) {
   elf_section_header sh;
   int str_size = 0;
@@ -163,15 +169,14 @@ elf_status load_elf_symbol(elf_ctx *ctx) {
   for (int i = 0, offset = ctx->ehdr.shoff; i < ctx->ehdr.shnum; i++, offset += ELF_SECTION_HEADER_SZ) {
     if (elf_fpread(ctx, (void *) &sh, sizeof(sh), offset) != sizeof(sh))
       return EL_EIO;
-    if (sh.sh_type == SHT_SYMTAB) {// * symbol table
-      //线性结构
+    if (sh.sh_type == SHT_SYMTAB) {//symbol table
       if (elf_fpread(ctx, &ctx->symbols, sh.sh_size, sh.sh_offset) != sh.sh_size)
         return EL_EIO;
       ctx->symbol_cnt = sh.sh_size / ELF_SYMBOL_SZ;
-    } else if (sh.sh_type == SHT_STRTAB) {// * string table
+    } 
+    else if (sh.sh_type == SHT_STRTAB) {//string table
       if (elf_fpread(ctx, &ctx->str_table + str_size, sh.sh_size, sh.sh_offset) != sh.sh_size)
         return EL_EIO;
-      // * 可能存在多个 string table
       str_size += sh.sh_size;
     }
   }

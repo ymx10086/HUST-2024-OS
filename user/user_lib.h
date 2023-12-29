@@ -4,4 +4,4 @@
 
 int printu(const char *s, ...);
 int exit(int code);
-int print_backtrace(int depth); //º¯ÊıÉùÃ÷
+int print_backtrace(int depth); //calling

@@ -14,6 +14,7 @@
 
 #include "spike_interface/spike_utils.h"
 
+
 extern elf_ctx g_elfloader;
 
 //
@@ -34,17 +35,15 @@ ssize_t sys_user_exit(uint64 code) {
   shutdown(code);
 }
 
-ssize_t sys_user_print_backtrace(uint64 depth) {
-  //系统调用print_backtrace函数打印栈
+// ! add for lab1_challenge1_backtrace
+ssize_t sys_user_print_backtrace(int64 depth) {
   uint64 user_sp = current->trapframe->regs.sp + 16 + 8;
   int64 cur_depth = 0;
   for (uint64 cur_p = user_sp; cur_depth < depth; cur_p += 16) {
     uint64 ra = *(uint64 *) cur_p;
-    if (ra == 0) break;// * 到达用户栈底
-    // * 追踪符号
+    if (ra == 0) break;
     uint64 tmp = 0;
     int symbol_idx = -1;
-    // sprint("ra: %x\n", ra);
     for (int i = 0; i < g_elfloader.symbol_cnt; i++) {
       if (g_elfloader.symbols[i].st_info == STT_FUNC && g_elfloader.symbols[i].st_value < ra && g_elfloader.symbols[i].st_value > tmp) {
         tmp = g_elfloader.symbols[i].st_value;
@@ -70,11 +69,13 @@ ssize_t sys_user_print_backtrace(uint64 depth) {
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
 //
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7) {
+ 
   switch (a0) {
     case SYS_user_print:
       return sys_user_print((const char*)a1, a2);
     case SYS_user_exit:
       return sys_user_exit(a1);
+    // ! add for lab1_challenge1_backtrace
     case SYS_user_showbacktrace:
       return sys_user_print_backtrace(a1);
     default:

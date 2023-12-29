@@ -50,7 +50,6 @@ int exit(int code) {
   return do_user_call(SYS_user_exit, code, 0, 0, 0, 0, 0, 0); 
 }
 
-// º¯ÊýÊµÏÖ
 int print_backtrace(int depth) {
   return do_user_call(SYS_user_showbacktrace, depth, 0, 0, 0, 0, 0, 0);
 }
