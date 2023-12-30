@@ -16,6 +16,9 @@
 
 #include "spike_interface/spike_utils.h"
 
+// add for lab3_challenge1
+extern process *ready_queue_head;
+
 //
 // implement the SYS_user_print syscall
 //
@@ -98,6 +101,32 @@ ssize_t sys_user_yield() {
 }
 
 //
+// kerenl entry point of SYS_user_wait
+//
+ssize_t sys_user_wait(int pid) {
+  if (pid == -1) {
+    current->status = BLOCKED;
+    schedule();
+  }
+  // * 对应 pid > 0
+  if (pid < NPROC) {
+    int flag = 0;
+    process *p;
+    for (p = ready_queue_head; p->queue_next != NULL; p = p->queue_next) {
+      if (p->pid != pid) continue;
+      flag = 1;
+      break;
+    }
+    if (p->pid == pid) flag = 1;
+    if (flag) {
+      current->status = BLOCKED;
+      schedule();
+    }
+  }
+  return 0;
+}
+
+//
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
 //
@@ -116,6 +145,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_fork();
     case SYS_user_yield:
       return sys_user_yield();
+    case SYS_user_wait:
+      return sys_user_wait(a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }

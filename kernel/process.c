@@ -157,6 +157,12 @@ int free_process(process *proc) {
   // as it is different from regular OS, which needs to run 7x24.
   proc->status = ZOMBIE;
 
+  // add for lab3_challenge1
+  if (proc->parent != NULL && proc->parent->status == BLOCKED) {
+    proc->parent->status = READY;
+    insert_to_ready_queue(proc->parent);
+  }
+
   return 0;
 }
 
@@ -196,15 +202,33 @@ int do_fork(process *parent) {
 
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
-          // ½¨Á¢¸¸½ø³ÌÎ»ÓÚ pa_of_mapped_va µÄ´úÂë¶ÎÓë×Ó½ø³Ì¶ÔÓ¦Âß¼­µØÖ·µÄÓ³Éä
+          // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ pa_of_mapped_va ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó½ï¿½ï¿½Ì¶ï¿½Ó¦ï¿½ß¼ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ó³ï¿½ï¿½
           map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, pa_of_mapped_va, prot_to_type(PROT_READ | PROT_EXEC, 1));
         }
+
+        // add for lab3_challenge1
+        sprint("do_fork map code segment at pa:%p of parent to child at va:%p.\n", lookup_pa(parent->pagetable, parent->mapped_info[i].va), parent->mapped_info[i].va);
 
         // after mapping, register the vm region (do not delete codes below!)
         child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;
         child->mapped_info[child->total_mapped_region].npages =
                 parent->mapped_info[i].npages;
         child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
+        child->total_mapped_region++;
+        break;
+
+      // add for lab3_challenge1
+      case DATA_SEGMENT:
+        for (int j = 0; j < parent->mapped_info[i].npages; j++) {
+          uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
+          void *new_addr = alloc_page();
+          memcpy(new_addr, (void *) pa_of_mapped_va, PGSIZE);
+          map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, (uint64) new_addr, prot_to_type(PROT_READ | PROT_WRITE, 1));// * æƒé™ä¸ºå¯è¯»ã€å¯å†™
+        }
+
+        child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;
+        child->mapped_info[child->total_mapped_region].npages = parent->mapped_info[i].npages;
+        child->mapped_info[child->total_mapped_region].seg_type = DATA_SEGMENT;
         child->total_mapped_region++;
         break;
     }
