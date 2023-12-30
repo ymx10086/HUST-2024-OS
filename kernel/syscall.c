@@ -104,25 +104,30 @@ ssize_t sys_user_yield() {
 // kerenl entry point of SYS_user_wait
 //
 ssize_t sys_user_wait(int pid) {
-  if (pid == -1) {
-    current->status = BLOCKED;
-    schedule();
-  }
-  // * 对应 pid > 0
-  if (pid < NPROC) {
-    int flag = 0;
-    process *p;
-    for (p = ready_queue_head; p->queue_next != NULL; p = p->queue_next) {
-      if (p->pid != pid) continue;
+  int flag = 0;
+  process *p = ready_queue_head;
+
+  //illegal format
+  if(pid == 0 || pid < -1 || pid >= NPROC) flag = 0;
+  if(flag) return -1; 
+
+  if (pid == -1) flag = 1;
+  while(1){
+    if (p->pid != pid){
+      if(p -> queue_next == NULL) break;
+      p = p->queue_next;
+    } 
+    else{
       flag = 1;
       break;
     }
-    if (p->pid == pid) flag = 1;
-    if (flag) {
-      current->status = BLOCKED;
-      schedule();
-    }
+  };
+  if (flag) {
+    current->status = BLOCKED;
+    schedule();
   }
+  else return -1;
+
   return 0;
 }
 
@@ -145,6 +150,7 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_fork();
     case SYS_user_yield:
       return sys_user_yield();
+    // ! add for lab3_challenge1
     case SYS_user_wait:
       return sys_user_wait(a1);
     default:
