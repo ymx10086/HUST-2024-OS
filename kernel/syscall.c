@@ -43,11 +43,14 @@ ssize_t sys_user_print_backtrace(int64 depth) {
     uint64 ra = *(uint64 *) cur_p;
     if (ra == 0) break;
     uint64 tmp = 0;
+    uint64 min_diatance = __INT_MAX__;
     int symbol_idx = -1;
     for (int i = 0; i < g_elfloader.symbol_cnt; i++) {
-      if (g_elfloader.symbols[i].st_info == STT_FUNC && g_elfloader.symbols[i].st_value < ra && g_elfloader.symbols[i].st_value > tmp) {
-        tmp = g_elfloader.symbols[i].st_value;
-        symbol_idx = i;
+      if (g_elfloader.symbols[i].st_info == STT_FUNC) {
+        if(ra - g_elfloader.symbols[i].st_value < min_diatance){
+          min_diatance = ra - g_elfloader.symbols[i].st_value;
+          symbol_idx = i;
+        } 
       }
     }
     if (symbol_idx != -1) {
@@ -55,9 +58,7 @@ ssize_t sys_user_print_backtrace(int64 depth) {
         sprint("%s\n", &g_elfloader.str_table[g_elfloader.symbols[symbol_idx].st_name]);
       else
         continue;
-    } else {
-      sprint("failed to backtrace symbol %lx\n", ra);
-    }
+    } 
     cur_depth++;
   }
   return 0;
