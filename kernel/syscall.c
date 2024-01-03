@@ -216,6 +216,64 @@ ssize_t sys_user_unlink(char * vfn){
   return do_unlink(pfn);
 }
 
+// ! add for lab4_challenge1
+ssize_t sys_user_rcwd(uint64 path) {
+  // read current phyiscal path
+  uint64 pa = (uint64)user_va_to_pa((pagetable_t)(current->pagetable), (void*)path);
+  memcpy((char*)pa, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+  return 0;
+}
+
+// ! add for lab4_challenge1
+ssize_t sys_user_ccwd(uint64 path) {
+  // read current phyiscal path
+  uint64 pa = (uint64)user_va_to_pa((pagetable_t)(current->pagetable), (void*)path);
+  char* path_copy = (char*)pa;
+  char mask[MAX_PATH_LEN];
+  memset(mask, '\0', MAX_PATH_LEN);
+  memcpy(mask, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+  // sprint("ddddddd %s\n", mask);
+  // sprint("ddddddd %s\n", data);
+  if (path_copy[0] == '.') {
+    if (path_copy[1] == '.') {
+      // return back to the last directory
+      int i = strlen(mask) - 1;
+      while(1){
+        if (mask[i] == '/') {
+          mask[i] = '\0';
+          break;
+        }
+        i--;
+      }
+    }
+
+    int len = strlen(mask);
+    if (strlen(mask) == 0) mask[1] = '\0';
+    if (strlen(mask) == 1) mask[0] = '\0', mask[1] = '\0';
+    int i = 0, tag = 0;
+    while(i < strlen(path_copy)){
+      if (path_copy[i] == '/') {
+        tag = i;
+        break;
+      }
+      i++;
+    }
+    if(tag == 0) path_copy[0] = '/', path_copy[1] = '\0';
+    memcpy(mask + strlen(mask), path_copy + tag, strlen(path_copy + tag));
+
+    memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+    memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+
+
+  }
+  else if (path_copy[0] == '/') {
+    memcpy(current->pfiles->cwd->name, path_copy, strlen(path_copy));
+
+  }
+
+  return 0;
+}
+
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
@@ -264,6 +322,11 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_link((char *)a1, (char *)a2);
     case SYS_user_unlink:
       return sys_user_unlink((char *)a1);
+    // ! add for lab4_challenge1
+    case SYS_user_rcwd:
+      return sys_user_rcwd(a1);
+    case SYS_user_ccwd:
+      return sys_user_ccwd(a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }

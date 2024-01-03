@@ -199,7 +199,7 @@ int do_fork(process *parent) {
 
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
-          // 建立父进程位于 pa_of_mapped_va 的代码段与子进程对应逻辑地址的映射
+          
           map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, pa_of_mapped_va, prot_to_type(PROT_READ | PROT_EXEC, 1));
         }
 
