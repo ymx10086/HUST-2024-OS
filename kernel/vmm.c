@@ -161,13 +161,10 @@ void *user_va_to_pa(pagetable_t page_dir, void *va) {
   // invalid PTE, and should return NULL.
   // panic( "You have to implement user_va_to_pa (convert user va to pa) to print messages in lab2_1.\n" );
   
-  // 获取页表项 PTE
-  pte_t *pte_containing_va = page_walk(page_dir, (uint64) va, 0);
-  // va 最终对应的物理地址
+  pte_t *pte_va = page_walk(page_dir, (uint64) va, 0);
   uint64 pa = 0;
-  // 计算偏移地址
-  if (pte_containing_va)
-    pa = PTE2PA(*pte_containing_va) + (((uint64) va) & ((1 << PGSHIFT) - 1));
+  if (pte_va)
+    pa = PTE2PA(*pte_va) + (((uint64) va) & ((1 << PGSHIFT) - 1));
   return (void *) pa;
 
 }
