@@ -202,6 +202,10 @@ elf_status elf_load(elf_ctx *ctx) {
   elf_prog_header ph_addr;
   int i, off;
 
+  // ! add for lab1_challenge2
+  // store the maximum virtual address of program sections
+  uint64 max_va = 0;
+
   // traverse the elf program segment headers
   for (i = 0, off = ctx->ehdr.phoff; i < ctx->ehdr.phnum; i++, off += sizeof(ph_addr)) {
     // read segment headers
@@ -217,7 +221,27 @@ elf_status elf_load(elf_ctx *ctx) {
     // actual loading
     if (elf_fpread(ctx, dest, ph_addr.memsz, ph_addr.off) != ph_addr.memsz)
       return EL_EIO;
-  }
+
+    // ! add for lab1_challenge2
+    // update max_va
+    if (ph_addr.vaddr + ph_addr.memsz > max_va) max_va = ph_addr.vaddr + ph_addr.memsz;
+    }
+
+    // ! add for lab1_challenge2
+    char segment_name[16];
+    ((elf_info *) ctx->info)->p->debugline = NULL;
+    elf_sect_header name_seg, tmp_seg;
+    // read name segment
+    if (elf_fpread(ctx, (void *) &name_seg, sizeof(name_seg), ctx->ehdr.shoff + ctx->ehdr.shstrndx * sizeof(name_seg)) != sizeof(name_seg)) return EL_EIO;
+    // find .debug_line segment and store it
+    for (i = 0, off = ctx->ehdr.shoff; i < ctx->ehdr.shnum; i++, off += sizeof(tmp_seg)) {
+        if (elf_fpread(ctx, (void *) &tmp_seg, sizeof(tmp_seg), off) != sizeof(tmp_seg)) return EL_EIO;
+        elf_fpread(ctx, (void *) segment_name, 20, name_seg.offset + tmp_seg.name);
+        if (strcmp(segment_name, ".debug_line") == 0) {
+            if (elf_fpread(ctx, (void *) max_va, tmp_seg.size, tmp_seg.offset) != tmp_seg.size) return EL_EIO;
+            make_addr_line(ctx, (char *) max_va, tmp_seg.size);
+        }
+    }
 
   return EL_OK;
 }

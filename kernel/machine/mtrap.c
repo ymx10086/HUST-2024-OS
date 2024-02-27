@@ -2,17 +2,63 @@
 #include "kernel/process.h"
 #include "spike_interface/spike_utils.h"
 
-static void handle_instruction_access_fault() { panic("Instruction access fault!"); }
+// ! add for lab1_challenge2
+#include "string.h" 
+char error_path[128], error_code[10240];
+struct stat tmp_stat;
 
-static void handle_load_access_fault() { panic("Load access fault!"); }
+// Parameter is the entry of array "process-line".
+// line_show prints the code line the entry points to.
+//
+void line_show(addr_line *line) {
+  int len = strlen(current->dir[current->file[line->file].dir]);
+  // get construct path
+  strcpy(error_path, current->dir[current->file[line->file].dir]);
+  error_path[len] = '/';
+  strcpy(error_path + len + 1, current->file[line->file].file);
 
-static void handle_store_access_fault() { panic("Store/AMO access fault!"); }
+  // read and print code line
+  spike_file_t *f = spike_file_open(error_path, O_RDONLY, 0);
+  spike_file_stat(f, &tmp_stat);
+  spike_file_read(f, error_code, tmp_stat.st_size);
+  spike_file_close(f);
+  for (int off = 0, line_cnt = 0; off < tmp_stat.st_size; line_cnt++) {
+    int tmp_off = off;
+    while (tmp_off < tmp_stat.st_size && error_code[tmp_off] != '\n') tmp_off++;
+    if (line_cnt == line->line - 1) {
+        error_code[tmp_off] = '\0';
+        sprint("Runtime error at %s:%d\n%s\n", error_path, line->line, error_code + off);
+        break;
+    }
+    off = tmp_off + 1;
+  }
+}
 
-static void handle_illegal_instruction() { panic("Illegal instruction!"); }
+//
+// Find the "process->line" array entry
+//
+void error_displayer() {
+  uint64 mepc = read_csr(mepc);
+  for (int i = 0; i < current->line_ind; i++) {
+    // find the exception line table entry
+    if (mepc < current->line[i].addr) {
+      line_show(current->line + i - 1);
+      break;
+    }
+  }
+}
 
-static void handle_misaligned_load() { panic("Misaligned Load!"); }
+static void handle_instruction_access_fault() {error_displayer(); panic("Instruction access fault!"); }
 
-static void handle_misaligned_store() { panic("Misaligned AMO!"); }
+static void handle_load_access_fault() {error_displayer(); panic("Load access fault!"); }
+
+static void handle_store_access_fault() {error_displayer(); panic("Store/AMO access fault!"); }
+
+static void handle_illegal_instruction() {error_displayer(); panic("Illegal instruction!"); }
+
+static void handle_misaligned_load() {error_displayer(); panic("Misaligned Load!"); }
+
+static void handle_misaligned_store() {error_displayer(); panic("Misaligned AMO!"); }
 
 // added @lab1_3
 static void handle_timer() {
