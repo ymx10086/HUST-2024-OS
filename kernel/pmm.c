@@ -28,8 +28,11 @@ static list_node g_free_mem_list;
 //
 static void create_freepage_list(uint64 start, uint64 end) {
   g_free_mem_list.next = 0;
-  for (uint64 p = ROUNDUP(start, PGSIZE); p + PGSIZE < end; p += PGSIZE)
+  for (uint64 p = ROUNDUP(start, PGSIZE); p + PGSIZE < end; p += PGSIZE) {
+    // sprint("create_freepage_list: 0x%lx\n", p);
     free_page( (void *)p );
+  }
+    
 }
 
 //
@@ -84,5 +87,5 @@ void pmm_init() {
 
   sprint("kernel memory manager is initializing ...\n");
   // create the list of free pages
-  create_freepage_list(free_mem_start_addr, free_mem_end_addr);
+  create_freepage_list(free_mem_start_addr, free_mem_end_addr); 
 }
