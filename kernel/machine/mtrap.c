@@ -14,6 +14,7 @@ void line_show(addr_line *line) {
   int len = strlen(current->dir[current->file[line->file].dir]);
   // get construct path
   strcpy(error_path, current->dir[current->file[line->file].dir]);
+  sprint("Error : %s", error_path);
   error_path[len] = '/';
   strcpy(error_path + len + 1, current->file[line->file].file);
 
@@ -22,6 +23,7 @@ void line_show(addr_line *line) {
   spike_file_stat(f, &tmp_stat);
   spike_file_read(f, error_code, tmp_stat.st_size);
   spike_file_close(f);
+
   for (int off = 0, line_cnt = 0; off < tmp_stat.st_size; line_cnt++) {
     int tmp_off = off;
     while (tmp_off < tmp_stat.st_size && error_code[tmp_off] != '\n') tmp_off++;
