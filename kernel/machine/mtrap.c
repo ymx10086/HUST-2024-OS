@@ -14,7 +14,7 @@ void line_show(addr_line *line) {
   int len = strlen(current->dir[current->file[line->file].dir]);
   // get construct path
   strcpy(error_path, current->dir[current->file[line->file].dir]);
-  sprint("Error : %s", error_path);
+  // sprint("Error : %s", error_path);
   error_path[len] = '/';
   strcpy(error_path + len + 1, current->file[line->file].file);
 
