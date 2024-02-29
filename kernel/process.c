@@ -196,7 +196,7 @@ int do_fork(process *parent) {
 
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
-          // 建立父进程位于 pa_of_mapped_va 的代码段与子进程对应逻辑地址的映射
+          
           map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, pa_of_mapped_va, prot_to_type(PROT_READ | PROT_EXEC, 1));
         }
 
@@ -216,4 +216,51 @@ int do_fork(process *parent) {
   insert_to_ready_queue(child);
 
   return child->pid;
+}
+
+// ! add for lab3_challenge2
+// set
+semaphore sems[NPROC];
+
+int alloc_sem(int val) {
+  // select a free semaphore
+  for (int i = 0; i < NPROC; i++) {
+    if (sems[i].occupied) continue;
+    sems[i].occupied = 1;
+    sems[i].val = val;
+    sems[i].wl_head = sems[i].wl_tail = NULL;
+    return i;
+  }
+  panic("no enough semaphore, please correct the programm!!!");
+}
+
+// v
+int v_sem(int sem) {
+  if (sem < 0 || sem >= NPROC) return -1;
+  sems[sem].val++;
+  if (sems[sem].wl_head != NULL) {
+    process *t = sems[sem].wl_head;
+    sems[sem].wl_head = t->queue_next;
+    insert_to_ready_queue(t);
+  }
+  return 0;
+}
+
+//p
+int p_sem(int sem) {
+  if (sem < 0 || sem >= NPROC) return -1;
+  sems[sem].val--;
+  if (sems[sem].val < 0) {
+    if (sems[sem].wl_head != NULL) {
+      sems[sem].wl_tail->queue_next = current->queue_next;
+      // sprint("RRR : %d", (current->queue_next != NULL));
+      sems[sem].wl_tail = current;
+    } else {
+      sems[sem].wl_head = sems[sem].wl_tail = current;
+      current->queue_next = NULL;
+    }
+    current->status = BLOCKED;
+    schedule();
+  }
+  return 0;
 }

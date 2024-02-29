@@ -70,9 +70,34 @@ int fork() {
   return do_user_call(SYS_user_fork, 0, 0, 0, 0, 0, 0, 0);
 }
 
+// ! add for lab3_challenge2
+
 //
 // lib call to yield
 //
 void yield() {
   do_user_call(SYS_user_yield, 0, 0, 0, 0, 0, 0, 0);
+}
+
+//
+// lib call to sem_new
+//
+int sem_new(int val) {
+  return do_user_call(SYS_sem_new, (uint64) val, 0, 0, 0, 0, 0, 0);
+}
+
+// # added @ lab3_challenge2
+//
+// lib call to sem_P
+//
+int sem_P(int sem) {
+  return do_user_call(SYS_sem_P, (uint64) sem, 0, 0, 0, 0, 0, 0);
+}
+
+// # added @ lab3_challenge2
+//
+// lib call to sem_V
+//
+int sem_V(int sem) {
+  return do_user_call(SYS_sem_V, (uint64) sem, 0, 0, 0, 0, 0, 0);
 }

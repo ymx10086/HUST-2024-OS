@@ -106,4 +106,24 @@ int do_fork(process* parent);
 // current running process
 extern process* current;
 
+// address of the first free page in our simple heap. added @lab2_2
+extern uint64 g_ufree_page;
+
+// ! add for lab3_challenge2
+typedef struct semaphore_t {
+  int val;                   // * 信号量的数值
+  int occupied;              // * 是否被占用
+  process *wl_head, *wl_tail;// * 等待队列首尾指针
+} semaphore;
+
+// # added @ lab3_challenge2
+// allocate a semaphore. returns index of the semaphore found, range from [0, NPROC]
+int alloc_sem(int val);
+
+// increase the semaphore.
+int v_sem(int sem);
+
+// decrease the semaphore.
+int p_sem(int sem);
+
 #endif
