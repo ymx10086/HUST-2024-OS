@@ -11,6 +11,7 @@
 #include "util/functions.h"
 
 #include "spike_interface/spike_utils.h"
+#include "spike_interface/atomic.h"
 
 //
 // handling the syscalls. will call do_syscall() defined in kernel/syscall.c
@@ -31,21 +32,20 @@ static void handle_syscall(trapframe *tf) {
 
 //
 // global variable that store the recorded "ticks". added @lab1_3
-static uint64 g_ticks = 0;
+static uint64 g_ticks[NCPU] = {0, 0};
 //
 // added @lab1_3
 //
 void handle_mtimer_trap() {
-  sprint("Ticks %d\n", g_ticks);
+  sprint("Ticks %d\n", g_ticks[read_tp()]);
   // TODO (lab1_3): increase g_ticks to record this "tick", and then clear the "SIP"
   // field in sip register.
   // hint: use write_csr to disable the SIP_SSIP bit in sip.
-
-  //panic( "lab1_3: increase g_ticks by one, and clear SIP field in sip register.\n" );
-  g_ticks++;
+  // panic( "lab1_3: increase g_ticks by one, and clear SIP field in sip register.\n" );
+  g_ticks[read_tp()] ++;
   write_csr(sip, 0);
-
 }
+
 
 //
 // the page fault handler. added @lab2_3. parameters:
@@ -62,7 +62,7 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
       // virtual address that causes the page fault.
       // panic( "You need to implement the operations that actually handle the page fault in lab2_3.\n" );
 
-      user_vm_map((pagetable_t) current->pagetable, stval - stval % PGSIZE, PGSIZE, (uint64) alloc_page(), prot_to_type(PROT_WRITE | PROT_READ, 1));
+      user_vm_map((pagetable_t) current[read_tp()]->pagetable, stval - stval % PGSIZE, PGSIZE, (uint64) alloc_page(), prot_to_type(PROT_WRITE | PROT_READ, 1));
       
       break;
     default:
@@ -75,14 +75,19 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
 // kernel/smode_trap.S will pass control to smode_trap_handler, when a trap happens
 // in S-mode.
 //
+extern spinlock_t current_lock;
 void smode_trap_handler(void) {
   // make sure we are in User mode before entering the trap handling.
   // we will consider other previous case in lab1_3 (interrupt).
   if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
 
-  assert(current);
+  spinlock_lock(&current_lock);
+
+  process* proc = current[read_tp()];
+
+  spinlock_unlock(&current_lock);
   // save user process counter.
-  current->trapframe->epc = read_csr(sepc);
+  proc->trapframe->epc = read_csr(sepc);
 
   // if the cause of trap is syscall from user application.
   // read_csr() and CAUSE_USER_ECALL are macros defined in kernel/riscv.h
@@ -91,7 +96,7 @@ void smode_trap_handler(void) {
   // use switch-case instead of if-else, as there are many cases since lab2_3.
   switch (cause) {
     case CAUSE_USER_ECALL:
-      handle_syscall(current->trapframe);
+      handle_syscall(proc->trapframe);
       break;
     case CAUSE_MTIMER_S_TRAP:
       handle_mtimer_trap();
@@ -110,5 +115,5 @@ void smode_trap_handler(void) {
   }
 
   // continue (come back to) the execution of current process.
-  switch_to(current);
+  switch_to(current[read_tp()]);
 }
