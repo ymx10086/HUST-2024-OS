@@ -76,18 +76,14 @@ elf_status elf_load(elf_ctx *ctx){
 	int i, off;
 
 	// traverse the elf program segment headers
-	for (i = 0, off = ctx->ehdr.phoff; i < ctx->ehdr.phnum; i++, off += sizeof(ph_addr))
-	{
+	for (i = 0, off = ctx->ehdr.phoff; i < ctx->ehdr.phnum; i++, off += sizeof(ph_addr)){
 		// read segment headers
 		if (elf_fpread(ctx, (void *)&ph_addr, sizeof(ph_addr), off) != sizeof(ph_addr))
 			return EL_EIO;
 
-		if (ph_addr.type != ELF_PROG_LOAD)
-			continue;
-		if (ph_addr.memsz < ph_addr.filesz)
-			return EL_ERR;
-		if (ph_addr.vaddr + ph_addr.memsz < ph_addr.vaddr)
-			return EL_ERR;
+		if (ph_addr.type != ELF_PROG_LOAD) continue;
+		if (ph_addr.memsz < ph_addr.filesz) return EL_ERR;
+		if (ph_addr.vaddr + ph_addr.memsz < ph_addr.vaddr) return EL_ERR;
 
 		// allocate memory block before elf loading
 		void *dest = elf_alloc_mb(ctx, ph_addr.vaddr, ph_addr.vaddr, ph_addr.memsz);
@@ -106,13 +102,11 @@ elf_status elf_load(elf_ctx *ctx){
 		((process *)(((elf_info *)(ctx->info))->p))->mapped_info[j].npages = 1;
 
 		// SEGMENT_READABLE, SEGMENT_EXECUTABLE, SEGMENT_WRITABLE are defined in kernel/elf.h
-		if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_EXECUTABLE))
-		{
+		if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_EXECUTABLE)){
 			((process *)(((elf_info *)(ctx->info))->p))->mapped_info[j].seg_type = CODE_SEGMENT;
 			sprint("CODE_SEGMENT added at mapped info offset:%d\n", j);
 		}
-		else if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_WRITABLE))
-		{
+		else if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_WRITABLE)){
 			((process *)(((elf_info *)(ctx->info))->p))->mapped_info[j].seg_type = DATA_SEGMENT;
 			sprint("DATA_SEGMENT added at mapped info offset:%d\n", j);
 		}
@@ -159,8 +153,7 @@ void load_bincode_from_host_elf(process *p){
 
 	// retrieve command line arguements
 	size_t argc = parse_args(&arg_bug_msg);
-	if (!argc)
-		panic("You need to specify the application program!\n");
+	if (!argc) panic("You need to specify the application program!\n");
 
 	sprint("Application: %s\n", arg_bug_msg.argv[0]);
 
