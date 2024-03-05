@@ -199,7 +199,7 @@ int do_fork(process *parent) {
 
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
-          // 建立父进程位于 pa_of_mapped_va 的代码段与子进程对应逻辑地址的映射
+
           map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, pa_of_mapped_va, prot_to_type(PROT_READ | PROT_EXEC, 1));
         }
 
@@ -221,58 +221,39 @@ int do_fork(process *parent) {
   return child->pid;
 }
 
-// 根据alloc_process函数改写
-static void exec_clean_pagetable(pagetable_t page_dir) { // comment: pagetable_t是uint64* 其加法遵循指针加法
-    int cnt = PGSIZE / sizeof(pte_t); // pte_t是int型
-    int vaild_cnt = 0;
-    int valid_and_writable_cnt = 0;
-    for (int i = 0; i < cnt; i++) {
+// realease three level pagetable
+static void exec_clean_pagetable(pagetable_t page_dir) {
+
+    for (int i = 0; i < PGSIZE / sizeof(pte_t); i++) {
         pte_t* pte1 = page_dir + i;
         if (*pte1 & PTE_V) {
             pagetable_t page_mid_dir = (pagetable_t)PTE2PA(*pte1);
-            for (int j = 0; j < cnt; j++) {
+            for (int j = 0; j < PGSIZE / sizeof(pte_t); j++) {
                 pte_t* pte2 = page_mid_dir + j;
                 if (*pte2 & PTE_V) {
                     pagetable_t page_low_dir = (pagetable_t)PTE2PA(*pte2);
-                    for (int k = 0; k < cnt; k++) {
+                    for (int k = 0; k < PGSIZE / sizeof(pte_t); k++) {
                         pte_t* pte3 = page_low_dir + k;
                         if (*pte3 & PTE_V) {
-                            // uint64 page = PTE2PA(*pte3);
-                            // // sprint("lgm:the pa is %0x\n", page);
-                            // // if (free_mem_start_addr <= page && page < free_mem_end_addr) {
-                            // //     free_page((void *)page); // 释放物理页
-                            // //     (*pte3) &= ~PTE_V; // 将页表项置为无效
-                            // // } 
-                            // free_page((void *)page); // 释放物理页(注意：修改了原先的free_page函数)
-                            // (*pte3) &= ~PTE_V; // 将页表项置为无效
-                            vaild_cnt ++;
-                            // sprint("lgm:the pa is %0x\n", PTE2PA(*pte3));
                             if (*pte3 & PTE_W) {
-                                valid_and_writable_cnt ++;
-                                // sprint("                lgm:the pa is %0x\n", PTE2PA(*pte3));
                                 uint64 page = PTE2PA(*pte3);
                                 free_page((void *)page); 
                             }
-                            (*pte3) &= ~PTE_V; // 将页表项置为无效
+                            (*pte3) &= ~PTE_V; 
                         }
                     }
-                    // sprint("lgm:page_low_dir is %0x\n", page_low_dir);
                     free_page((void *)page_low_dir);
                 }
             }
-            // sprint("lgm:page_mid_dir is %0x\n", page_mid_dir);
             free_page((void *)page_mid_dir);
         }
     }
-    // sprint("lgm:page_dir is %0x\n", page_dir);
     free_page((void *)page_dir);
-    // sprint("exec_clean_pagetable end\n");
-    // panic("stop");
-    // sprint("                                         vaild_cnt is %d, valid_and_writable_cnt is %d\n", vaild_cnt, valid_and_writable_cnt);
+
 }
 
+// release three level pagetable
 void exec_clean(process* p) {
-    // 释放原先内存
     exec_clean_pagetable(p->pagetable);
     
     // init proc[i]'s vm space
@@ -313,23 +294,5 @@ void exec_clean(process* p) {
     p->mapped_info[SYSTEM_SEGMENT].npages = 1;
     p->mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
 
-    // initialize the process's heap manager
-    p->user_heap.heap_top = USER_FREE_ADDRESS_START;
-    p->user_heap.heap_bottom = USER_FREE_ADDRESS_START;
-    p->user_heap.free_pages_count = 0;
-
-    // map user heap in userspace
-    p->mapped_info[HEAP_SEGMENT].va = USER_FREE_ADDRESS_START;
-    p->mapped_info[HEAP_SEGMENT].npages = 0; // no pages are mapped to heap yet.
-    p->mapped_info[HEAP_SEGMENT].seg_type = HEAP_SEGMENT;
-
-    p->total_mapped_region = 4;
-    // sprint("lgm:exec_clean: p->total_mapped_region = %d\n", p->total_mapped_region);
-
-    // initialize files_struct
-    // p->pfiles = init_proc_file_management();
-    // sprint("in alloc_proc. build proc_file_management successfully.\n");
-
-    // p->wait_pid = 0; // 没有需要等待的子进程
-    p->parent = NULL; // 设置为没有父进程
+    p->parent = NULL; 
 }

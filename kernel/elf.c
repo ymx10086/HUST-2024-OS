@@ -11,8 +11,7 @@
 #include "spike_interface/spike_utils.h"
 #include "vfs.h"
 
-typedef struct elf_info_t
-{
+typedef struct elf_info_t{
 	// spike_file_t *f;
 	struct file* f;
 	process *p;
@@ -22,18 +21,16 @@ typedef struct elf_info_t
 // the implementation of allocater. allocates memory space for later segment loading.
 // this allocater is heavily modified @lab2_1, where we do NOT work in bare mode.
 //
-static void *elf_alloc_mb(elf_ctx *ctx, uint64 elf_pa, uint64 elf_va, uint64 size)
-{
+static void *elf_alloc_mb(elf_ctx *ctx, uint64 elf_pa, uint64 elf_va, uint64 size){
 	elf_info *msg = (elf_info *)ctx->info;
 	// we assume that size of proram segment is smaller than a page.
 	kassert(size < PGSIZE);
 	void *pa = alloc_page();
-	// sprint("in elf_alloc_mb the pa is %lx\n", (uint64)pa);
+
 	if (pa == 0)
 		panic("uvmalloc mem alloc falied\n");
 
 	memset((void *)pa, 0, PGSIZE);
-	// sprint("in elf_alloc_mb the elf_va is %lx\n", elf_va);
 	user_vm_map((pagetable_t)msg->p->pagetable, elf_va, PGSIZE, (uint64)pa,
 				prot_to_type(PROT_WRITE | PROT_READ | PROT_EXEC, 1));
 
@@ -43,8 +40,7 @@ static void *elf_alloc_mb(elf_ctx *ctx, uint64 elf_pa, uint64 elf_va, uint64 siz
 //
 // actual file reading, using the spike file interface.
 //
-static uint64 elf_fpread(elf_ctx *ctx, void *dest, uint64 nb, uint64 offset)
-{
+static uint64 elf_fpread(elf_ctx *ctx, void *dest, uint64 nb, uint64 offset){
 	elf_info *msg = (elf_info *)ctx->info;
 	// call spike file utility to load the content of elf file into memory.
 	// spike_file_pread will read the elf file (msg->f) from offset to memory (indicated by
@@ -57,8 +53,7 @@ static uint64 elf_fpread(elf_ctx *ctx, void *dest, uint64 nb, uint64 offset)
 //
 // init elf_ctx, a data structure that loads the elf.
 //
-elf_status elf_init(elf_ctx *ctx, void *info)
-{
+elf_status elf_init(elf_ctx *ctx, void *info){
 	ctx->info = info;
 
 	// load the elf header
@@ -75,8 +70,7 @@ elf_status elf_init(elf_ctx *ctx, void *info)
 //
 // load the elf segments to memory regions.
 //
-elf_status elf_load(elf_ctx *ctx)
-{
+elf_status elf_load(elf_ctx *ctx){
 	// elf_prog_header structure is defined in kernel/elf.h
 	elf_prog_header ph_addr;
 	int i, off;
@@ -131,8 +125,7 @@ elf_status elf_load(elf_ctx *ctx)
 	return EL_OK;
 }
 
-typedef union
-{
+typedef union{
 	uint64 buf[MAX_CMDLINE_ARGS];
 	char *argv[MAX_CMDLINE_ARGS];
 } arg_buf;
@@ -141,8 +134,7 @@ typedef union
 // returns the number (should be 1) of string(s) after PKE kernel in command line.
 // and store the string(s) in arg_bug_msg.
 //
-static size_t parse_args(arg_buf *arg_bug_msg)
-{
+static size_t parse_args(arg_buf *arg_bug_msg){
 	// HTIFSYS_getmainvars frontend call reads command arguments to (input) *arg_bug_msg
 	long r = frontend_syscall(HTIFSYS_getmainvars, (uint64)arg_bug_msg,
 							  sizeof(*arg_bug_msg), 0, 0, 0, 0, 0);
@@ -162,8 +154,7 @@ static size_t parse_args(arg_buf *arg_bug_msg)
 //
 // load the elf of user application, by using the spike file interface.
 //
-void load_bincode_from_host_elf(process *p)
-{
+void load_bincode_from_host_elf(process *p){
 	arg_buf arg_bug_msg;
 
 	// retrieve command line arguements
