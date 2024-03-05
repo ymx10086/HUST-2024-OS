@@ -220,3 +220,116 @@ int do_fork(process *parent) {
 
   return child->pid;
 }
+
+// 根据alloc_process函数改写
+static void exec_clean_pagetable(pagetable_t page_dir) { // comment: pagetable_t是uint64* 其加法遵循指针加法
+    int cnt = PGSIZE / sizeof(pte_t); // pte_t是int型
+    int vaild_cnt = 0;
+    int valid_and_writable_cnt = 0;
+    for (int i = 0; i < cnt; i++) {
+        pte_t* pte1 = page_dir + i;
+        if (*pte1 & PTE_V) {
+            pagetable_t page_mid_dir = (pagetable_t)PTE2PA(*pte1);
+            for (int j = 0; j < cnt; j++) {
+                pte_t* pte2 = page_mid_dir + j;
+                if (*pte2 & PTE_V) {
+                    pagetable_t page_low_dir = (pagetable_t)PTE2PA(*pte2);
+                    for (int k = 0; k < cnt; k++) {
+                        pte_t* pte3 = page_low_dir + k;
+                        if (*pte3 & PTE_V) {
+                            // uint64 page = PTE2PA(*pte3);
+                            // // sprint("lgm:the pa is %0x\n", page);
+                            // // if (free_mem_start_addr <= page && page < free_mem_end_addr) {
+                            // //     free_page((void *)page); // 释放物理页
+                            // //     (*pte3) &= ~PTE_V; // 将页表项置为无效
+                            // // } 
+                            // free_page((void *)page); // 释放物理页(注意：修改了原先的free_page函数)
+                            // (*pte3) &= ~PTE_V; // 将页表项置为无效
+                            vaild_cnt ++;
+                            // sprint("lgm:the pa is %0x\n", PTE2PA(*pte3));
+                            if (*pte3 & PTE_W) {
+                                valid_and_writable_cnt ++;
+                                // sprint("                lgm:the pa is %0x\n", PTE2PA(*pte3));
+                                uint64 page = PTE2PA(*pte3);
+                                free_page((void *)page); 
+                            }
+                            (*pte3) &= ~PTE_V; // 将页表项置为无效
+                        }
+                    }
+                    // sprint("lgm:page_low_dir is %0x\n", page_low_dir);
+                    free_page((void *)page_low_dir);
+                }
+            }
+            // sprint("lgm:page_mid_dir is %0x\n", page_mid_dir);
+            free_page((void *)page_mid_dir);
+        }
+    }
+    // sprint("lgm:page_dir is %0x\n", page_dir);
+    free_page((void *)page_dir);
+    // sprint("exec_clean_pagetable end\n");
+    // panic("stop");
+    // sprint("                                         vaild_cnt is %d, valid_and_writable_cnt is %d\n", vaild_cnt, valid_and_writable_cnt);
+}
+
+void exec_clean(process* p) {
+    // 释放原先内存
+    exec_clean_pagetable(p->pagetable);
+    
+    // init proc[i]'s vm space
+    p->trapframe = (trapframe *)alloc_page(); // trapframe, used to save context 
+    memset(p->trapframe, 0, sizeof(trapframe));
+
+    // page directory
+    p->pagetable = (pagetable_t)alloc_page();
+    memset((void *)p->pagetable, 0, PGSIZE);
+
+    p->kstack = (uint64)alloc_page() + PGSIZE; // user kernel stack top
+    uint64 user_stack = (uint64)alloc_page();        // phisical address of user stack bottom
+    p->trapframe->regs.sp = USER_STACK_TOP;    // virtual address of user stack top
+
+    // allocates a page to record memory regions (segments)
+    p->mapped_info = (mapped_region *)alloc_page();
+    memset(p->mapped_info, 0, PGSIZE);
+
+    // map user stack in userspace
+    user_vm_map((pagetable_t)p->pagetable, USER_STACK_TOP - PGSIZE, PGSIZE,
+                user_stack, prot_to_type(PROT_WRITE | PROT_READ, 1));
+    p->mapped_info[STACK_SEGMENT].va = USER_STACK_TOP - PGSIZE;
+    p->mapped_info[STACK_SEGMENT].npages = 1;
+    p->mapped_info[STACK_SEGMENT].seg_type = STACK_SEGMENT;
+
+    // map trapframe in user space (direct mapping as in kernel space).
+    user_vm_map((pagetable_t)p->pagetable, (uint64)p->trapframe, PGSIZE, // trapframe的物理地址等于虚拟地址
+                (uint64)p->trapframe, prot_to_type(PROT_WRITE | PROT_READ, 0));
+    p->mapped_info[CONTEXT_SEGMENT].va = (uint64)p->trapframe;
+    p->mapped_info[CONTEXT_SEGMENT].npages = 1;
+    p->mapped_info[CONTEXT_SEGMENT].seg_type = CONTEXT_SEGMENT;
+
+    // map S-mode trap vector section in user space (direct mapping as in kernel space)
+    // we assume that the size of usertrap.S is smaller than a page.
+    user_vm_map((pagetable_t)p->pagetable, (uint64)trap_sec_start, PGSIZE,
+                (uint64)trap_sec_start, prot_to_type(PROT_READ | PROT_EXEC, 0));
+    p->mapped_info[SYSTEM_SEGMENT].va = (uint64)trap_sec_start;
+    p->mapped_info[SYSTEM_SEGMENT].npages = 1;
+    p->mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
+
+    // initialize the process's heap manager
+    p->user_heap.heap_top = USER_FREE_ADDRESS_START;
+    p->user_heap.heap_bottom = USER_FREE_ADDRESS_START;
+    p->user_heap.free_pages_count = 0;
+
+    // map user heap in userspace
+    p->mapped_info[HEAP_SEGMENT].va = USER_FREE_ADDRESS_START;
+    p->mapped_info[HEAP_SEGMENT].npages = 0; // no pages are mapped to heap yet.
+    p->mapped_info[HEAP_SEGMENT].seg_type = HEAP_SEGMENT;
+
+    p->total_mapped_region = 4;
+    // sprint("lgm:exec_clean: p->total_mapped_region = %d\n", p->total_mapped_region);
+
+    // initialize files_struct
+    // p->pfiles = init_proc_file_management();
+    // sprint("in alloc_proc. build proc_file_management successfully.\n");
+
+    // p->wait_pid = 0; // 没有需要等待的子进程
+    p->parent = NULL; // 设置为没有父进程
+}
