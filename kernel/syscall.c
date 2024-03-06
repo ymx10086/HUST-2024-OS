@@ -17,6 +17,10 @@
 
 #include "spike_interface/spike_utils.h"
 
+// add for lab3_challenge1
+extern process *ready_queue_head;
+
+
 //
 // implement the SYS_user_print syscall
 //
@@ -217,6 +221,48 @@ ssize_t sys_user_unlink(char * vfn){
 }
 
 //
+// kerenl entry point of SYS_user_wait
+//
+ssize_t sys_user_wait(int pid) {
+  int flag = 0;
+  process *p = ready_queue_head;
+
+  //illegal format
+  if(pid == 0 || pid < -1 || pid >= NPROC) flag = 0;
+  if(flag) return -1; 
+
+  if (pid == -1) flag = 1;
+  while(1){
+    if (p->pid != pid){
+      if(p -> queue_next == NULL) break;
+      p = p->queue_next;
+    } 
+    else{
+      flag = 1;
+      break;
+    }
+  };
+  if (flag) {
+    current->status = BLOCKED;
+    schedule();
+  }
+  else return -1;
+
+  return 0;
+}
+
+int sys_user_exec(char *pathva, char *arg){
+	char *pathpa = (char *)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
+	char* argpa = (char* )user_va_to_pa((pagetable_t)(current->pagetable), arg);
+
+	// sprint("in function sys_user_exec, pathpa is %s, argva is %s\n", pathpa, argpa);
+	
+  int ret = do_exec(pathpa, argpa);
+	return ret;
+}
+
+
+//
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
 //
@@ -264,6 +310,13 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_link((char *)a1, (char *)a2);
     case SYS_user_unlink:
       return sys_user_unlink((char *)a1);
+
+    // ! add for lab3_challenge1
+    case SYS_user_wait:
+      return sys_user_wait(a1);
+
+    case SYS_user_exec:
+      return sys_user_exec((char *)a1, (char *)a2);
     default:
       panic("Unknown syscall %ld \n", a0);
   }

@@ -102,7 +102,8 @@ elf_status elf_load(elf_ctx *ctx) {
 
     ((process*)(((elf_info*)(ctx->info))->p))->total_mapped_region ++;
   }
-
+  sprint("Total program segment number is %d\n", ((process*)(((elf_info*)(ctx->info))->p))->total_mapped_region);
+  
   return EL_OK;
 }
 
@@ -117,7 +118,10 @@ void load_bincode_from_host_elf(process *p, char *filename) {
   // elf_info is defined above, used to tie the elf file and its corresponding process.
   elf_info info;
 
+  sprint("Filename: %s \n", filename);
+	
   info.f = vfs_open(filename, O_RDONLY);
+  
   info.p = p;
   // IS_ERR_VALUE is a macro defined in spike_interface/spike_htif.h
   if (IS_ERR_VALUE(info.f)) panic("Fail on openning the input application program.\n");

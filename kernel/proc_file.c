@@ -15,6 +15,10 @@
 #include "util/functions.h"
 #include "util/string.h"
 
+#include "elf.h"
+#include "vmm.h"
+#include "memlayout.h"
+
 //
 // initialize file system
 //
@@ -220,4 +224,92 @@ int do_link(char *oldpath, char *newpath) {
 //
 int do_unlink(char *path) {
   return vfs_unlink(path);
+}
+
+// load exec
+static void exec_bincode(process *p, char *path){
+    sprint("Application: %s\n", path);
+    int fp = do_open(path, O_RDONLY);
+    spike_file_t *f = (spike_file_t *)(get_opened_file(fp)->f_dentry->dentry_inode->i_fs_info); 
+    elf_header ehdr;
+    if (spike_file_read(f, &ehdr, sizeof(elf_header)) != sizeof(elf_header)){
+        panic("read elf header error\n");
+    }
+
+    // load the code_segmant and data_segmant
+    elf_prog_header ph_addr;
+    for (int i = 0, off = ehdr.phoff; i < ehdr.phnum; i++, off += sizeof(ph_addr)){
+        
+        spike_file_lseek(f, off, SEEK_SET); // seek to the program header
+        if (spike_file_read(f, &ph_addr, sizeof(ph_addr)) != sizeof(ph_addr))
+            panic("read elf program header error\n");
+        if (ph_addr.type != ELF_PROG_LOAD) continue;
+
+        void *pa = alloc_page(); 
+        memset(pa, 0, PGSIZE);
+        user_vm_map((pagetable_t)p->pagetable, ph_addr.vaddr, PGSIZE, (uint64)pa, prot_to_type(PROT_WRITE | PROT_READ | PROT_EXEC, 1));
+        spike_file_lseek(f, ph_addr.off, SEEK_SET);
+        if (spike_file_read(f, pa, ph_addr.memsz) != ph_addr.memsz)
+        {
+            panic("read program segment error.\n");
+        }
+
+        int pos;
+        for (pos = 0; pos < PGSIZE / sizeof(mapped_region); pos++) // seek the last mapped region
+            if (p->mapped_info[pos].va == 0x0)
+                break;
+
+        p->mapped_info[pos].va = ph_addr.vaddr;
+        p->mapped_info[pos].npages = 1;
+
+        // SEGMENT_READABLE, SEGMENT_EXECUTABLE, SEGMENT_WRITABLE are defined in kernel/elf.h
+        if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_EXECUTABLE)){
+            p->mapped_info[pos].seg_type = CODE_SEGMENT;
+            sprint("CODE_SEGMENT added at mapped info offset:%d\n", pos);
+        }
+        else if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_WRITABLE)){
+            p->mapped_info[pos].seg_type = DATA_SEGMENT;
+            sprint("DATA_SEGMENT added at mapped info offset:%d\n", pos);
+        }
+        else
+            panic("unknown program segment encountered, segment flag:%d.\n", ph_addr.flags);
+
+        p->total_mapped_region++;
+    }
+    
+    p->trapframe->epc = ehdr.entry;
+    do_close(fp); 
+    sprint("Application program entry point (virtual address): 0x%lx\n", p->trapframe->epc);
+}
+
+int do_exec(char *path_, char *arg_){
+
+	int PathLen = strlen(path_);
+	char path[PathLen + 1];
+	strcpy(path, path_);
+	int ArgLen = strlen(arg_);
+	char arg[ArgLen + 1];
+	strcpy(arg, arg_);
+  
+	exec_clean(current);
+
+  // sprint("Path : %s, arg : %s \n", path, arg);
+	
+	uint64 argv_va = current->trapframe->regs.sp - ArgLen - 1;
+	argv_va = argv_va - argv_va % 8; 
+	uint64 argv_pa = (uint64)user_va_to_pa(current->pagetable, (void *)argv_va);
+	strcpy((char *)argv_pa, arg);
+
+	uint64 argvs_va = argv_va - 8; 
+	uint64 argvs_pa = (uint64)user_va_to_pa(current->pagetable, (void *)argvs_va);
+	*(uint64 *)argvs_pa = argv_va; 
+
+	current->trapframe->regs.a0 = 1; 
+	current->trapframe->regs.a1 = argvs_va; 
+	current->trapframe->regs.sp = argvs_va - argvs_va % 16; 
+
+	load_bincode_from_host_elf(current, path); 
+
+
+	return -1;
 }

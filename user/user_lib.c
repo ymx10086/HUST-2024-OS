@@ -167,3 +167,18 @@ int unlink_u(const char *fn){
 int close(int fd) {
   return do_user_call(SYS_user_close, fd, 0, 0, 0, 0, 0, 0);
 }
+
+// ! add for lab3_challenge1
+//
+// lib call to wait
+//
+int wait(int pid) {
+  return do_user_call(SYS_user_wait, pid, 0, 0, 0, 0, 0, 0);
+}
+
+//
+// lib call to exec
+//
+int exec(const char *path, char* arg) {
+  return do_user_call(SYS_user_exec, (uint64)path, (uint64)arg, 0, 0, 0, 0, 0);
+}
