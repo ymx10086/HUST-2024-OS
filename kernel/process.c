@@ -137,7 +137,7 @@ process *alloc_process()
 	// map S-mode trap vector section in user space (direct mapping as in kernel space)
 	// we assume that the size of usertrap.S is smaller than a page.
 	user_vm_map((pagetable_t)procs[i].pagetable, (uint64)trap_sec_start, PGSIZE,
-				(uint64)trap_sec_start, prot_to_type(PROT_READ | PROT_EXEC, 0)); // Ã»ÓÐwriteÈ¨ÏÞ
+				(uint64)trap_sec_start, prot_to_type(PROT_READ | PROT_EXEC, 0)); // Ã»ï¿½ï¿½writeÈ¨ï¿½ï¿½
 	procs[i].mapped_info[SYSTEM_SEGMENT].va = (uint64)trap_sec_start;
 	procs[i].mapped_info[SYSTEM_SEGMENT].npages = 1;
 	procs[i].mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
@@ -197,7 +197,7 @@ int do_fork(process *parent) {
   sprint("will fork a child from parent %d.\n", parent->pid);
   process *child = alloc_process();
 
-  sprint("Num of parent->total_mapped_region: %d\n", parent->total_mapped_region);
+  // sprint("Num of parent->total_mapped_region: %d\n", parent->total_mapped_region);
 
   for (int i = 0; i < parent->total_mapped_region; i++) {
     // browse parent's vm space, and copy its trapframe and data segments,
@@ -266,7 +266,7 @@ int do_fork(process *parent) {
 
         // ! add for lab3_challenge1
         uint64 pa_of_mapped_va_child = lookup_pa(parent->pagetable, parent->mapped_info[i].va);
-        sprint("do_fork map code segment at pa:%p of parent to child at va:%p.\n", pa_of_mapped_va_child, parent->mapped_info[i].va);
+        sprint("do_fork map code segment at pa:%lx of parent to child at va:%lx.\n", pa_of_mapped_va_child, parent->mapped_info[i].va);
 
 
         // after mapping, register the vm region (do not delete codes below!)
@@ -274,7 +274,7 @@ int do_fork(process *parent) {
         child->mapped_info[child->total_mapped_region].npages =
                 parent->mapped_info[i].npages;
         child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
-        sprint("%d\n", child->total_mapped_region);
+        // sprint("%d\n", child->total_mapped_region);
         child->total_mapped_region++;
         break;
 
@@ -285,7 +285,7 @@ int do_fork(process *parent) {
           // need to register new page
           void *new_addr = alloc_page();
           memcpy(new_addr, (void *) pa_of_mapped_va, PGSIZE);
-          map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, (uint64) new_addr, prot_to_type(PROT_READ | PROT_WRITE, 1));// * È¨ÏÞÎª¿É¶Á¡¢¿ÉÐ´
+          map_pages(child->pagetable, parent->mapped_info[i].va + j * PGSIZE, PGSIZE, (uint64) new_addr, prot_to_type(PROT_READ | PROT_WRITE, 1));// * È¨ï¿½ï¿½Îªï¿½É¶ï¿½ï¿½ï¿½ï¿½ï¿½Ð´
         }
 
         // after mapping, register the vm region (do not delete codes below!)
@@ -298,7 +298,7 @@ int do_fork(process *parent) {
         break;
     }
   }
-  sprint("total mapped region: %d\n", child->total_mapped_region);
+  // sprint("total mapped region: %d\n", child->total_mapped_region);
 
   child->pfiles->nfiles = parent->pfiles->nfiles;
   child->pfiles->cwd = parent->pfiles->cwd;
@@ -374,7 +374,7 @@ void exec_clean(process* p) {
     p->mapped_info[STACK_SEGMENT].seg_type = STACK_SEGMENT;
 
     // map trapframe in user space (direct mapping as in kernel space).
-    user_vm_map((pagetable_t)p->pagetable, (uint64)p->trapframe, PGSIZE, // trapframeµÄÎïÀíµØÖ·µÈÓÚÐéÄâµØÖ·
+    user_vm_map((pagetable_t)p->pagetable, (uint64)p->trapframe, PGSIZE, // trapframeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
                 (uint64)p->trapframe, prot_to_type(PROT_WRITE | PROT_READ, 0));
     p->mapped_info[CONTEXT_SEGMENT].va = (uint64)p->trapframe;
     p->mapped_info[CONTEXT_SEGMENT].npages = 1;
