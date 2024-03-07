@@ -43,6 +43,22 @@ int printu(const char* s, ...) {
   return do_user_call(SYS_user_print, (uint64)buf, n, 0, 0, 0, 0, 0);
 }
 
+int scanfu(const char* s, ...) {
+  va_list vl;
+  va_start(vl, s);
+  
+  char in[256];  // fixed buffer size.
+
+  // make a syscall to implement the required functionality.
+  do_user_call(SYS_user_scanf, (uint64)in, 0, 0, 0, 0, 0, 0);
+
+  int res = vsnscanf(in, s, vl);
+
+  va_end(vl);
+
+  return res;
+}
+
 //
 // applications need to call exit to quit execution.
 //

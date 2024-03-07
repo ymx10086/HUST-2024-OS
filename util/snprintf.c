@@ -79,5 +79,39 @@ int32 vsnprintf(char* out, size_t n, const char* s, va_list vl) {
     out[pos] = 0;
   else if (n)
     out[n - 1] = 0;
+
   return pos;
+}
+
+int32 vsnscanf(const char *in, const char *format, va_list vl)
+{
+	const char *p = format;
+	bool isFormat = FALSE;
+	int32 counts = 0;
+  int32 argcounts = 0;
+
+	for (; *p; p++){
+		if (isFormat){
+			switch (*p){
+			case 's':
+        argcounts ++;
+				char *res = va_arg(vl, char *);
+        while(*in == ' ') in++;
+        if (*in != '\n' && *in != '\0' && *in != ' ') counts++;
+				while (*in != '\n' && *in != '\0' && *in != ' '){
+					*res++ = *in++;
+				}
+        if (*in == '\n' && *in == '\0') break;
+				*res = '\0';
+        isFormat = FALSE;
+				break;
+			default:
+				break;
+			}
+		}
+		else if (*p == '%')
+			isFormat = TRUE;
+	}
+  if (argcounts != counts) return 0;
+	return argcounts;
 }

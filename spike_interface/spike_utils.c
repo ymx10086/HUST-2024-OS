@@ -36,6 +36,34 @@ long frontend_syscall(long n, uint64 a0, uint64 a1, uint64 a2, uint64 a3, uint64
   return ret;
 }
 
+//===============    Spike-assisted scanf, input string from terminal    ===============
+static uint8 mcall_console_getchar(void) {
+  uint8 ch;
+  if (htif) {
+    ch = htif_console_getchar();
+  }
+  return 0;
+}
+
+void vscanfk(const char* s, va_list vl) {
+  char out[256];
+
+  spike_file_read(stderr, out, sizeof(out));
+
+  vsnscanf(out, s, vl);
+
+}
+
+void sscanf(const char* s, ...) {
+  va_list vl;
+  va_start(vl, s);
+
+  vscanfk(s, vl);
+
+  va_end(vl);
+}
+
+
 //===============    Spike-assisted printf, output string to terminal    ===============
 static uintptr_t mcall_console_putchar(uint8 ch) {
   if (htif) {
@@ -46,6 +74,7 @@ static uintptr_t mcall_console_putchar(uint8 ch) {
 
 void vprintk(const char* s, va_list vl) {
   char out[256];
+
   int res = vsnprintf(out, sizeof(out), s, vl);
   //you need spike_file_init before this call
   spike_file_write(stderr, out, res < sizeof(out) ? res : sizeof(out));
@@ -78,6 +107,7 @@ void sprint(const char* s, ...) {
 
   va_end(vl);
 }
+
 
 //===============    Spike-assisted termination, panic and assert    ===============
 void poweroff(uint16_t code) {

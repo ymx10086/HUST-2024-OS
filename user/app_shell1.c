@@ -7,23 +7,33 @@
 #include "string.h"
 #include "util/types.h"
 
-#define Author "Mingxin_Yang"
-#define Host "ymx"
-char path[256] = "/";
-
 int main(int argc, char *argv[]) {
   printu("\n======== Shell Start ========\n\n");
+  int fd;
+  int MAXBUF = 1024;
+  char buf[MAXBUF];
+  char *token;
+  char delim[3] = " \n";
+  fd = open("/shellrc", O_RDONLY);
 
-  printu("Author: %s\n", Author);
-  printu("Operating System: RISC-V\n\n"); 
-
+  read_u(fd, buf, MAXBUF);
+  close(fd);
   char *command = naive_malloc();
   char *para = naive_malloc();
   int start = 0;
-  while(TRUE){
-    printu("%s@%s:%s", Author, Host, path);
-    int a = scanfu("%s%s", command, para);
-    if(!strcmp(command, "exit")) break;
+  while (1)
+  {
+    if(!start) {
+      token = strtok(buf, delim);
+      start = 1;
+    }
+    else 
+      token = strtok(NULL, delim);
+    strcpy(command, token);
+    token = strtok(NULL, delim);
+    strcpy(para, token);
+    if(strcmp(command, "END") == 0 && strcmp(para, "END") == 0)
+      break;
     printu("Next command: %s %s\n\n", command, para);
     printu("==========Command Start============\n\n");
     int pid = fork();

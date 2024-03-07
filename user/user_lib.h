@@ -36,5 +36,7 @@ int unlink_u(const char *fn);
 int wait(int pid); //claim
 int exec(const char *path, char* arg);
 
+int scanfu(const char *s, ...);
+
 
 #endif

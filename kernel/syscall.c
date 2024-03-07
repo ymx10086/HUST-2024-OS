@@ -20,6 +20,8 @@
 // add for lab3_challenge1
 extern process *ready_queue_head;
 
+#define MAX_BUF_LEN 256
+
 
 //
 // implement the SYS_user_print syscall
@@ -30,6 +32,18 @@ ssize_t sys_user_print(const char* buf, size_t n) {
   assert( current );
   char* pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), (void*)buf);
   sprint(pa);
+  return 0;
+}
+
+//
+// implement the SYS_user_scanf syscall
+//
+ssize_t sys_user_scanf(const char* buf) {
+  // buf is now an address in user space of the given app's user stack,
+  // so we have to transfer it into phisical address (kernel is running in direct mapping).
+  assert( current );
+  char* pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), (void*)buf);
+  spike_file_read(stderr, pa, 256);
   return 0;
 }
 
@@ -317,6 +331,9 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
 
     case SYS_user_exec:
       return sys_user_exec((char *)a1, (char *)a2);
+
+    case SYS_user_scanf:
+      return sys_user_scanf((const char*)a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }
