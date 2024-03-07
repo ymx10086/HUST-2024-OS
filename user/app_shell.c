@@ -9,7 +9,6 @@
 
 #define Author "Mingxin_Yang"
 #define Host "ymx"
-char path[256] = "/";
 
 int main(int argc, char *argv[]) {
   printu("\n======== Shell Start ========\n\n");
@@ -21,14 +20,18 @@ int main(int argc, char *argv[]) {
   char *para = naive_malloc();
   int start = 0;
   while(TRUE){
-    printu("%s@%s:%s", Author, Host, path);
+    char path[30];
+    memset(path, '\0', strlen(path));
+    read_cwd(path);
+    printu("%s@%s:%s ", Author, Host, path);
     int a = scanfu("%s%s", command, para);
     if(!strcmp(command, "exit")) break;
     printu("Next command: %s %s\n\n", command, para);
     printu("==========Command Start============\n\n");
+    int ret = 0;
     int pid = fork();
     if(pid == 0) {
-      int ret = exec(command, para);
+      ret = exec(command, para);
       if (ret == -1)
       printu("exec failed!\n");
     }

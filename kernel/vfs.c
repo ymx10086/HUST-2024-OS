@@ -16,6 +16,12 @@ struct device *vfs_dev_list[MAX_VFS_DEV];     // system device list in vfs layer
 struct hash_table dentry_hash_table;
 struct hash_table vinode_hash_table;
 
+// ! add for lab4_challenge1
+#include "process.h"
+#include "vmm.h"
+extern process* current;
+
+
 //
 // initializes the dentry hash list and vinode hash list
 //
@@ -512,6 +518,45 @@ struct dentry *lookup_final_dentry(const char *path, struct dentry **parent,
   char path_copy[MAX_PATH_LEN];
   strcpy(path_copy, path);
 
+  char mask[MAX_PATH_LEN];
+  memset(mask, '\0', sizeof(mask));
+  if (current != NULL){
+    // sprint("Path : %s\n", current->pfiles->cwd->name);
+    memcpy(mask, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+
+    // ! add for lab4_challenge1
+    if (path_copy[0] == '.') {
+      if (path_copy[1] == '.') {
+        // return back to the last directory
+        int i = strlen(mask) - 1;
+        while(1){
+          if (mask[i] == '/') {
+            mask[i] = '\0';
+            break;
+          }
+          i--;
+        }
+        if (strlen(mask) == 0) mask[0] = '/', mask[1] = '\0';
+        memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+        memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+      }
+      int len = strlen(mask);
+      if (strlen(mask) == 0) mask[1] = '\0';
+      if (strlen(mask) == 1) mask[0] = '\0', mask[1] = '\0';
+      int i = 0, tag = 0;
+      while(i < strlen(path_copy)){
+        if (path_copy[i] == '/') {
+          tag = i;
+          break;
+        }
+        i++;
+      }
+      if(tag == 0) path_copy[0] = '/', path_copy[1] = '\0';
+      memcpy(mask + strlen(mask), path_copy + tag, strlen(path_copy + tag));
+      strcpy(path_copy, mask);
+    }
+  }
+  
   // split the path, and retrieves a token at a time.
   // note: strtok() uses a static (local) variable to store the input path
   // string at the first time it is called. thus it can out a token each time.

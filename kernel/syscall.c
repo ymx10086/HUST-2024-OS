@@ -22,6 +22,23 @@ extern process *ready_queue_head;
 
 #define MAX_BUF_LEN 256
 
+// ! add for lab4_challenge1
+ssize_t sys_user_rcwd(uint64 path) {
+  // read current phyiscal path
+  uint64 pa = (uint64)user_va_to_pa((pagetable_t)(current->pagetable), (void*)path);
+  memcpy((char*)pa, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+  return 0;
+}
+
+// ! add for lab4_challenge1
+ssize_t sys_user_ccwd(uint64 path) {
+  // read current phyiscal path
+  uint64 pa = (uint64)user_va_to_pa((pagetable_t)(current->pagetable), (void*)path);
+  do_ccwd((char *)pa);
+
+  return 0;
+}
+
 
 //
 // implement the SYS_user_print syscall
@@ -268,8 +285,6 @@ ssize_t sys_user_wait(int pid) {
 int sys_user_exec(char *pathva, char *arg){
 	char *pathpa = (char *)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
 	char* argpa = (char* )user_va_to_pa((pagetable_t)(current->pagetable), arg);
-
-	// sprint("in function sys_user_exec, pathpa is %s, argva is %s\n", pathpa, argpa);
 	
   int ret = do_exec(pathpa, argpa);
 	return ret;
@@ -334,6 +349,11 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
 
     case SYS_user_scanf:
       return sys_user_scanf((const char*)a1);
+
+    case SYS_user_rcwd:
+      return sys_user_rcwd(a1);
+    case SYS_user_ccwd:
+      return sys_user_ccwd(a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }

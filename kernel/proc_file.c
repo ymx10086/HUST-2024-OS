@@ -141,6 +141,80 @@ int do_lseek(int fd, int offset, int whence) {
   return vfs_lseek(pfile, offset, whence);
 }
 
+int do_ccwd(char *pa){
+  char* path_copy = (char*)pa;
+  char mask[MAX_PATH_LEN];
+  memset(mask, '\0', MAX_PATH_LEN);
+  char origin[MAX_PATH_LEN];
+  memset(origin, '\0', MAX_PATH_LEN);
+  // sprint("current path : %s\n", current->pfiles->cwd->name);
+  memcpy(mask, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+
+  if (path_copy[0] == '.') {
+    if (path_copy[1] == '.') {
+      // return back to the last directory
+      int i = strlen(mask) - 1;
+      while(1){
+        if (mask[i] == '/') {
+          mask[i] = '\0';
+          break;
+        }
+        i--;
+      }
+      if (strlen(mask) == 0) mask[0] = '/', mask[1] = '\0';
+      memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+      memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+    }
+    else{
+      int len = strlen(mask);
+      if (strlen(mask) == 0) mask[1] = '\0';
+      if (strlen(mask) == 1) mask[0] = '\0', mask[1] = '\0';
+      int i = 0, tag = 0;
+      while(i < strlen(path_copy)){
+        if (path_copy[i] == '/') {
+          tag = i;
+          break;
+        }
+        i++;
+      }
+      if(tag == 0) path_copy[0] = '/', path_copy[1] = '\0';
+      memcpy(mask + strlen(mask), path_copy + tag, strlen(path_copy + tag));
+
+      struct dentry *parent = vfs_root_dentry;
+      char miss_name[MAX_PATH_LEN];
+
+      // lookup the dir, find its parent direntry
+      struct dentry *file_dentry = lookup_final_dentry(mask, &parent, miss_name);
+      if (!file_dentry) {
+        sprint("vfs_cwd: the directory donot exists!\n");
+        return -1;
+      }
+
+      memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+      memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+    }
+  }
+  else if (path_copy[0] == '/') {
+  
+    struct dentry *parent = vfs_root_dentry;
+    char miss_name[MAX_PATH_LEN];
+
+    // lookup the dir, find its parent direntry
+    struct dentry *file_dentry = lookup_final_dentry(path_copy, &parent, miss_name);
+    if (!file_dentry) {
+      sprint("vfs_cwd: the directory donot exists!\n");
+      return -1;
+    }
+
+     // sprint("copy path : %s\n", path_copy);
+    memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+    memcpy(current->pfiles->cwd->name, path_copy, strlen(path_copy));
+    // sprint("current path : %s\n", current->pfiles->cwd->name);
+  }
+
+  return 0;
+}
+
 //
 // read the vinode information
 //
@@ -309,7 +383,6 @@ int do_exec(char *path_, char *arg_){
 	current->trapframe->regs.sp = argvs_va - argvs_va % 16; 
 
 	load_bincode_from_host_elf(current, path); 
-
 
 	return -1;
 }

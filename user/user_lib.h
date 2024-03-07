@@ -38,5 +38,8 @@ int exec(const char *path, char* arg);
 
 int scanfu(const char *s, ...);
 
+int read_cwd(char *path);
+int change_cwd(const char *path);
+
 
 #endif
