@@ -395,3 +395,50 @@ void exec_clean(process* p) {
 
     p->total_mapped_region = 4;
 }
+
+// ! add for lab3_challenge2
+// set
+semaphore sems[NPROC];
+
+int alloc_sem(int val) {
+  // select a free semaphore
+  for (int i = 0; i < NPROC; i++) {
+    if (sems[i].occupied) continue;
+    sems[i].occupied = 1;
+    sems[i].val = val;
+    sems[i].wl_head = sems[i].wl_tail = NULL;
+    return i;
+  }
+  panic("no enough semaphore, please correct the programm!!!");
+}
+
+// v
+int v_sem(int sem) {
+  if (sem < 0 || sem >= NPROC) return -1;
+  sems[sem].val++;
+  if (sems[sem].wl_head != NULL) {
+    process *t = sems[sem].wl_head;
+    sems[sem].wl_head = t->queue_next;
+    insert_to_ready_queue(t);
+  }
+  return 0;
+}
+
+//p
+int p_sem(int sem) {
+  if (sem < 0 || sem >= NPROC) return -1;
+  sems[sem].val--;
+  if (sems[sem].val < 0) {
+    if (sems[sem].wl_head != NULL) {
+      sems[sem].wl_tail->queue_next = current->queue_next;
+      // sprint("RRR : %d", (current->queue_next != NULL));
+      sems[sem].wl_tail = current;
+    } else {
+      sems[sem].wl_head = sems[sem].wl_tail = current;
+      current->queue_next = NULL;
+    }
+    current->status = BLOCKED;
+    schedule();
+  }
+  return 0;
+}

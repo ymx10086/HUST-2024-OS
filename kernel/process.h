@@ -4,6 +4,12 @@
 #include "riscv.h"
 #include "proc_file.h"
 
+// ! add for lab2_challenge2
+typedef struct mem_block {
+  uint64 cap; // mem_block size
+  uint64 next; //
+}mem_block;
+
 typedef struct trapframe_t {
   // space to store context (all common registers)
   /* offset:0   */ riscv_regs regs;
@@ -112,5 +118,25 @@ extern process* current;
 
 // release three level pagetable
 void exec_clean(process* p);
+
+// address of the first free page in our simple heap. added @lab2_2
+extern uint64 g_ufree_page;
+
+// ! add for lab3_challenge2
+typedef struct semaphore_t {
+  int val;                   // * 信号量的数值
+  int occupied;              // * 是否被占用
+  process *wl_head, *wl_tail;// * 等待队列首尾指针
+} semaphore;
+
+// # added @ lab3_challenge2
+// allocate a semaphore. returns index of the semaphore found, range from [0, NPROC]
+int alloc_sem(int val);
+
+// increase the semaphore.
+int v_sem(int sem);
+
+// decrease the semaphore.
+int p_sem(int sem);
 
 #endif

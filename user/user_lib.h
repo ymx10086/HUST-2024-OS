@@ -43,5 +43,10 @@ int change_cwd(const char *path);
 
 void printpa(int* va);
 
+// ! add for lab3_challenge2
+int sem_new(int val);
+int sem_P(int sem);
+int sem_V(int sem);
+
 
 #endif

@@ -296,6 +296,28 @@ ssize_t sys_user_printpa(uint64 va){
   return 0;
 }
 
+// ! add for lab3_challenge2
+//
+// kernel entry point of sem_new
+//
+ssize_t sys_sem_new(int val) {
+  return alloc_sem(val);
+}
+
+//
+// kernel entry point of sem_P
+//
+ssize_t sys_sem_P(uint64 sem) {
+  return p_sem(sem);
+}
+
+//
+// kernel entry point of sem_V
+//
+ssize_t sys_sem_V(uint64 sem) {
+  return v_sem(sem);
+}
+
 
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
@@ -363,6 +385,14 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_rcwd(a1);
     case SYS_user_ccwd:
       return sys_user_ccwd(a1);
+    
+    // ! add for lab3_challenge2
+    case SYS_sem_new:
+      return sys_sem_new(a1);
+    case SYS_sem_P:
+      return sys_sem_P(a1);
+    case SYS_sem_V:
+      return sys_sem_V(a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }

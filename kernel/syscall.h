@@ -39,6 +39,11 @@
 #define SYS_user_ccwd (SYS_user_base + 10)
 #define SYS_user_printpa (SYS_user_base + 11)
 
+// ! add for lab3_challenge2
+#define SYS_sem_new (SYS_user_base + 12)
+#define SYS_sem_P (SYS_user_base + 13)
+#define SYS_sem_V (SYS_user_base + 14)
+
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7);
 
 #endif
