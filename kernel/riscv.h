@@ -199,6 +199,8 @@ static inline void flush_tlb(void) { asm volatile("sfence.vma zero, zero"); }
 #define PTE_A (1L << 6)  // accessed
 #define PTE_D (1L << 7)  // dirty
 
+#define PTE_C (1L << 8)  // 1->copy-on-write, 0->otherwise
+
 // shift a physical address to the right place for a PTE.
 #define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
 
