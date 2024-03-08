@@ -16,10 +16,10 @@ int main(int argc, char *argv[]) {
   printu("Author: %s\n", Author);
   printu("Operating System: RISC-V\n\n"); 
 
-  char *command = naive_malloc();
-  char *para = naive_malloc();
   int start = 0;
   while(TRUE){
+    char *command = naive_malloc();
+    char *para = naive_malloc();
     char path[30];
     memset(path, '\0', strlen(path));
     read_cwd(path);

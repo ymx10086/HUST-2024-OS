@@ -217,3 +217,27 @@ void print_proc_vmspace(process* proc) {
     sprint( ", mapped to pa:%lx\n", lookup_pa(proc->pagetable, proc->mapped_info[i].va) );
   }
 }
+
+// COW for true copy
+
+void heap_copy_on_write(process *child, process *parent, uint64 pa) {
+  // copy the true memory from parent space
+  for (uint64 heap_block = parent->user_heap.heap_bottom;
+      heap_block < parent->user_heap.heap_top; heap_block += PGSIZE) {
+    uint64 heap_block_pa = lookup_pa(parent->pagetable, heap_block);
+    if(heap_block_pa >= pa && heap_block_pa < pa + PGSIZE) {
+      user_vm_unmap(child->pagetable, heap_block, PGSIZE, 0); 
+      void *child_pa = alloc_page();
+      pte_t *child_pte = page_walk(child->pagetable, heap_block, 0);
+      *child_pte |= (~PTE_C); // set already copied
+      *child_pte &= PTE_W | PTE_R;    // set pte_w & pte_r
+
+      memcpy(child_pa, (void *)lookup_pa(parent->pagetable, heap_block), PGSIZE);
+      user_vm_map(child->pagetable, heap_block, PGSIZE, (uint64)child_pa, prot_to_type(PROT_WRITE | PROT_READ, 1));
+      
+      // sprint("heap block pa:%lx is already copied to child.\n", heap_block_pa);
+      break;
+    }
+  }
+}
+

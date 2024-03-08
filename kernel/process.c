@@ -97,8 +97,7 @@ process *alloc_process(){
 		if (procs[i].status == FREE)
 			break;
 
-	if (i >= NPROC)
-	{
+	if (i >= NPROC){
 		panic("cannot find any free process structure.\n");
 		return 0;
 	}
@@ -136,7 +135,7 @@ process *alloc_process(){
 	// map S-mode trap vector section in user space (direct mapping as in kernel space)
 	// we assume that the size of usertrap.S is smaller than a page.
 	user_vm_map((pagetable_t)procs[i].pagetable, (uint64)trap_sec_start, PGSIZE,
-				(uint64)trap_sec_start, prot_to_type(PROT_READ | PROT_EXEC, 0)); // û��writeȨ��
+				(uint64)trap_sec_start, prot_to_type(PROT_READ | PROT_EXEC, 0)); 
 	procs[i].mapped_info[SYSTEM_SEGMENT].va = (uint64)trap_sec_start;
 	procs[i].mapped_info[SYSTEM_SEGMENT].npages = 1;
 	procs[i].mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
@@ -178,6 +177,12 @@ int free_process(process *proc) {
   // as it is different from regular OS, which needs to run 7x24.
   proc->status = ZOMBIE;
 
+  for (uint64 heap_block = proc->user_heap.heap_bottom;
+    heap_block < proc->user_heap.heap_top; heap_block += PGSIZE) {
+  
+   user_vm_unmap(proc->pagetable, heap_block, PGSIZE, 0); 
+}
+
   // add for lab3_challenge1
   if (proc->parent != NULL && proc->parent->status == BLOCKED) {
     proc->parent->status = READY;
@@ -200,6 +205,10 @@ int do_fork(process *parent) {
 
   // sprint("Num of parent->total_mapped_region: %d\n", parent->total_mapped_region);
 
+  // for(int i = 0; i < parent->total_mapped_region; i++){
+  //   sprint("title : %d\n", parent->mapped_info[i].seg_type);
+  // }
+
   for (int i = 0; i < parent->total_mapped_region; i++) {
     // browse parent's vm space, and copy its trapframe and data segments,
     // map its code segment.
@@ -211,37 +220,24 @@ int do_fork(process *parent) {
         memcpy((void *) lookup_pa(child->pagetable, child->mapped_info[0].va),
                (void *) lookup_pa(parent->pagetable, parent->mapped_info[i].va), PGSIZE);
         break;
-      case HEAP_SEGMENT:{
-			// build a same heap for child process.
+      case HEAP_SEGMENT:
 
-			// convert free_pages_address into a filter to skip reclaimed blocks in the heap
-			// when mapping the heap blocks
-				int free_block_filter[MAX_HEAP_PAGES];
-				memset(free_block_filter, 0, MAX_HEAP_PAGES);
-				uint64 heap_bottom = parent->user_heap.heap_bottom;
-				for (int i = 0; i < parent->user_heap.free_pages_count; i++){
-					int index = (parent->user_heap.free_pages_address[i] - heap_bottom) / PGSIZE;
-					free_block_filter[index] = 1;
-				}
-
-				// copy and map the heap blocks
-				for (uint64 heap_block = current->user_heap.heap_bottom;
-					 heap_block < current->user_heap.heap_top; heap_block += PGSIZE){
-					if (free_block_filter[(heap_block - heap_bottom) / PGSIZE]) // skip free blocks
-						continue;
-
-					void *child_pa = alloc_page();
-					memcpy(child_pa, (void *)lookup_pa(parent->pagetable, heap_block), PGSIZE);
-					user_vm_map((pagetable_t)child->pagetable, heap_block, PGSIZE, (uint64)child_pa,
-								prot_to_type(PROT_WRITE | PROT_READ, 1));
-				}
-
-				child->mapped_info[HEAP_SEGMENT].npages = parent->mapped_info[HEAP_SEGMENT].npages;
-
-				// copy the heap manager from parent to child
-				memcpy((void *)&child->user_heap, (void *)&parent->user_heap, sizeof(parent->user_heap));
-			}
-			break;
+        for (uint64 heap_block = current->user_heap.heap_bottom;
+            heap_block < current->user_heap.heap_top; heap_block += PGSIZE) {
+          uint64 parent_pa = lookup_pa(parent->pagetable, heap_block);
+          
+          user_vm_map((pagetable_t)child->pagetable, heap_block, PGSIZE, parent_pa,
+                      prot_to_type(PROT_READ, 1));
+          
+          pte_t *child_pte = page_walk(child->pagetable, heap_block, 0);
+          *child_pte |= PTE_C; 
+          pte_t *parent_pte = page_walk(parent->pagetable, heap_block, 0);
+          *parent_pte &= (~PTE_W); 
+        }
+        child->mapped_info[HEAP_SEGMENT].npages = parent->mapped_info[HEAP_SEGMENT].npages;
+        memcpy((void*)&child->user_heap, (void*)&parent->user_heap, sizeof(parent->user_heap));
+        break;
+        
       case CODE_SEGMENT:
         // TODO (lab3_1): implment the mapping of child code segment to parent's
         // code segment.
@@ -264,7 +260,6 @@ int do_fork(process *parent) {
         uint64 pa_of_mapped_va_child = lookup_pa(parent->pagetable, parent->mapped_info[i].va);
         sprint("do_fork map code segment at pa:%lx of parent to child at va:%lx.\n", pa_of_mapped_va_child, parent->mapped_info[i].va);
 
-
         // after mapping, register the vm region (do not delete codes below!)
         child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;
         child->mapped_info[child->total_mapped_region].npages =
@@ -272,10 +267,12 @@ int do_fork(process *parent) {
         child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
         // sprint("%d\n", child->total_mapped_region);
         child->total_mapped_region++;
+        // sprint("%d\n", child->total_mapped_region);
         break;
 
       // ! add for lab3_challenge1
       case DATA_SEGMENT:
+
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
           // need to register new page
@@ -294,7 +291,6 @@ int do_fork(process *parent) {
         break;
     }
   }
-  // sprint("total mapped region: %d\n", child->total_mapped_region);
 
   child->pfiles->nfiles = parent->pfiles->nfiles;
   child->pfiles->cwd = parent->pfiles->cwd;
@@ -394,5 +390,8 @@ void exec_clean(process* p) {
     p->mapped_info[HEAP_SEGMENT].npages = 0; // no pages are mapped to heap yet.
     p->mapped_info[HEAP_SEGMENT].seg_type = HEAP_SEGMENT;
 
-    p->total_mapped_region = 6;
+    p->mapped_info[DATA_SEGMENT].seg_type = DATA_SEGMENT;
+    p->mapped_info[CODE_SEGMENT].seg_type = CODE_SEGMENT;
+
+    p->total_mapped_region = 4;
 }

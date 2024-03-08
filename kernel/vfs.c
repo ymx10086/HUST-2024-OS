@@ -412,7 +412,7 @@ struct file *vfs_opendir(const char *path) {
   struct dentry *file_dentry = lookup_final_dentry(path, &parent, miss_name);
 
   if (!file_dentry || file_dentry->dentry_inode->type != DIR_I) {
-    sprint("vfs_opendir: cannot find the direntry!\n");
+    // sprint("vfs_opendir: cannot find the direntry!\n");
     return NULL;
   }
 

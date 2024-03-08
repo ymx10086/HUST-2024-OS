@@ -290,6 +290,12 @@ int sys_user_exec(char *pathva, char *arg){
 	return ret;
 }
 
+ssize_t sys_user_printpa(uint64 va){
+  uint64 pa = (uint64)user_va_to_pa((pagetable_t)(current->pagetable), (void*)va);
+  sprint("%lx\n", pa);
+  return 0;
+}
+
 
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
@@ -349,6 +355,9 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
 
     case SYS_user_scanf:
       return sys_user_scanf((const char*)a1);
+
+    case SYS_user_printpa:
+      return sys_user_printpa(a1);
 
     case SYS_user_rcwd:
       return sys_user_rcwd(a1);

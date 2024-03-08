@@ -86,7 +86,13 @@ USER_M_CPPS 		:= user/app_mkdir.c user/user_lib.c
 
 USER_M_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_M_CPPS)))
 
-USER_M_TARGET 	:= $(HOSTFS_ROOT)/bin/app_mkdir
+USER_M_TARGET 	:= $(HOSTFS_ROOT)/bin/app_cow
+
+USER_COW_CPPS 		:= user/app_cow.c user/user_lib.c
+
+USER_COW_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_COW_CPPS)))
+
+USER_COW_TARGET 	:= $(HOSTFS_ROOT)/bin/app_cow
 
 USER_PW_CPPS 		:= user/app_pwd.c user/user_lib.c
 
@@ -120,6 +126,7 @@ $(OBJ_DIR):
 	@-mkdir -p $(dir $(USER_OBJS))
 	@-mkdir -p $(dir $(USER_E_OBJS))
 	@-mkdir -p $(dir $(USER_M_OBJS))
+	@-mkdir -p $(dir $(USER_COW_OBJS))
 	@-mkdir -p $(dir $(USER_CD_OBJS))
 	@-mkdir -p $(dir $(USER_PW_OBJS))
 	@-mkdir -p $(dir $(USER_T_OBJS))
@@ -168,6 +175,12 @@ $(USER_M_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_M_OBJS)
 	@$(COMPILE) --entry=main $(USER_M_OBJS) $(UTIL_LIB) -o $@
 	@echo "User app has been built into" \"$@\"
 
+$(USER_COW_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_COW_OBJS)
+	@echo "linking" $@	...	
+	-@mkdir -p $(HOSTFS_ROOT)/bin
+	@$(COMPILE) --entry=main $(USER_COW_OBJS) $(UTIL_LIB) -o $@
+	@echo "User app has been built into" \"$@\"
+
 $(USER_CD_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_CD_OBJS)
 	@echo "linking" $@	...	
 	-@mkdir -p $(HOSTFS_ROOT)/bin
@@ -203,10 +216,10 @@ $(USER_O_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_O_OBJS)
 
 .DEFAULT_GOAL := $(all)
 
-all: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET)
+all: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET)
 .PHONY:all
 
-run: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET)
+run: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET)
 	@echo "********************HUST PKE********************"
 	spike $(KERNEL_TARGET) /bin/app_shell
 

@@ -1,0 +1,773 @@
+linking  obj/util.a ...
+Util lib has been build into "obj/util.a"
+linking  obj/spike_interface.a ...
+Spike lib has been build into "obj/spike_interface.a"
+linking obj/riscv-pke ...
+PKE core has been built into "obj/riscv-pke"
+compiling user/app_shell.c
+linking hostfs_root/bin/app_shell ...
+User app has been built into "hostfs_root/bin/app_shell"
+linking hostfs_root/bin/app_ls ...
+User app has been built into "hostfs_root/bin/app_ls"
+linking hostfs_root/bin/app_mkdir ...
+User app has been built into "hostfs_root/bin/app_mkdir"
+linking hostfs_root/bin/app_cd ...
+User app has been built into "hostfs_root/bin/app_cd"
+linking hostfs_root/bin/app_pwd ...
+User app has been built into "hostfs_root/bin/app_pwd"
+linking hostfs_root/bin/app_touch ...
+User app has been built into "hostfs_root/bin/app_touch"
+linking hostfs_root/bin/app_cat ...
+User app has been built into "hostfs_root/bin/app_cat"
+linking hostfs_root/bin/app_echo ...
+User app has been built into "hostfs_root/bin/app_echo"
+********************HUST PKE********************
+spike obj/riscv-pke /bin/app_shell
+HTIF is available!
+Enter supervisor mode...
+PKE kernel start 0x0000000080000000, PKE kernel end: 0x0000000080011000, PKE kernel size: 0x0000000000011000 .
+free physical memory address: [0x0000000080011000, 0x0000000087ffffff] 
+kernel memory manager is initializing ...
+KERN_BASE 0x0000000080000000
+physical address of _etext is: 0x0000000080009000
+kernel page table is on 
+RAMDISK0: base address of RAMDISK0 is: 0x0000000087f35000
+RFS: format RAMDISK0 done!
+Switch to user mode...
+in alloc_proc. user frame 0x0000000087f29000, user stack 0x000000007ffff000, user kstack 0x0000000087f28000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+User application is loading.
+Application: /bin/app_shell
+CODE_SEGMENT added at mapped info offset:4
+DATA_SEGMENT added at mapped info offset:5
+Application program entry point (virtual address): 0x00000000000100b0
+going to insert process 0 to ready queue.
+going to schedule process 0 to run.
+
+======== Shell Start ========
+
+Author: Mingxin_Yang
+Operating System: RISC-V
+
+Mingxin_Yang@ymx:/ Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087f19000, user stack 0x000000007ffff000, user kstack 0x0000000087f1b000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 1 to ready queue.
+going to schedule process 1 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087f02000, user stack 0x000000007ffff000, user kstack 0x0000000087f04000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 2 to ready queue.
+going to schedule process 2 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087eec000, user stack 0x000000007ffff000, user kstack 0x0000000087eee000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 3 to ready queue.
+going to schedule process 3 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087ed6000, user stack 0x000000007ffff000, user kstack 0x0000000087ed8000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 4 to ready queue.
+going to schedule process 4 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087ec0000, user stack 0x000000007ffff000, user kstack 0x0000000087ec2000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 5 to ready queue.
+going to schedule process 5 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087eaa000, user stack 0x000000007ffff000, user kstack 0x0000000087eac000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 6 to ready queue.
+going to schedule process 6 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e94000, user stack 0x000000007ffff000, user kstack 0x0000000087e96000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 7 to ready queue.
+going to schedule process 7 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e7e000, user stack 0x000000007ffff000, user kstack 0x0000000087e80000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 8 to ready queue.
+going to schedule process 8 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e68000, user stack 0x000000007ffff000, user kstack 0x0000000087e6a000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 9 to ready queue.
+going to schedule process 9 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e52000, user stack 0x000000007ffff000, user kstack 0x0000000087e54000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 10 to ready queue.
+going to schedule process 10 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e3c000, user stack 0x000000007ffff000, user kstack 0x0000000087e3e000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 11 to ready queue.
+going to schedule process 11 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e26000, user stack 0x000000007ffff000, user kstack 0x0000000087e28000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 12 to ready queue.
+going to schedule process 12 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087e10000, user stack 0x000000007ffff000, user kstack 0x0000000087e12000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 13 to ready queue.
+going to schedule process 13 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087dfa000, user stack 0x000000007ffff000, user kstack 0x0000000087dfc000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 14 to ready queue.
+going to schedule process 14 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087de4000, user stack 0x000000007ffff000, user kstack 0x0000000087de6000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 15 to ready queue.
+going to schedule process 15 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087dce000, user stack 0x000000007ffff000, user kstack 0x0000000087dd0000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 16 to ready queue.
+going to schedule process 16 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087db8000, user stack 0x000000007ffff000, user kstack 0x0000000087dba000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 17 to ready queue.
+going to schedule process 17 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087da2000, user stack 0x000000007ffff000, user kstack 0x0000000087da4000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 18 to ready queue.
+going to schedule process 18 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d8c000, user stack 0x000000007ffff000, user kstack 0x0000000087d8e000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 19 to ready queue.
+going to schedule process 19 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d76000, user stack 0x000000007ffff000, user kstack 0x0000000087d78000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 20 to ready queue.
+going to schedule process 20 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d60000, user stack 0x000000007ffff000, user kstack 0x0000000087d62000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 21 to ready queue.
+going to schedule process 21 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d4a000, user stack 0x000000007ffff000, user kstack 0x0000000087d4c000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 22 to ready queue.
+going to schedule process 22 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d34000, user stack 0x000000007ffff000, user kstack 0x0000000087d36000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 23 to ready queue.
+going to schedule process 23 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d1e000, user stack 0x000000007ffff000, user kstack 0x0000000087d20000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 24 to ready queue.
+going to schedule process 24 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087d08000, user stack 0x000000007ffff000, user kstack 0x0000000087d0a000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 25 to ready queue.
+going to schedule process 25 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087cf2000, user stack 0x000000007ffff000, user kstack 0x0000000087cf4000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 26 to ready queue.
+going to schedule process 26 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087cdc000, user stack 0x000000007ffff000, user kstack 0x0000000087cde000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 27 to ready queue.
+going to schedule process 27 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087cc6000, user stack 0x000000007ffff000, user kstack 0x0000000087cc8000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 28 to ready queue.
+going to schedule process 28 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087cb0000, user stack 0x000000007ffff000, user kstack 0x0000000087cb2000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 29 to ready queue.
+going to schedule process 29 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087c9a000, user stack 0x000000007ffff000, user kstack 0x0000000087c9c000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 30 to ready queue.
+going to schedule process 30 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+in alloc_proc. user frame 0x0000000087c84000, user stack 0x000000007ffff000, user kstack 0x0000000087c86000 
+FS: created a file management struct for a process.
+in alloc_proc. build proc_file_management successfully.
+do_fork map code segment at pa:0000000087f13000 of parent to child at va:0000000000010000.
+going to insert process 31 to ready queue.
+going to schedule process 31 to run.
+Application: /bin/app_cd
+CODE_SEGMENT added at mapped info offset:4
+Application program entry point (virtual address): 0x0000000000010078
+
+======== cd command ========
+vfs_cwd: the directory donot exists!
+User exit with code:0.
+sdnnfagoing to insert process 0 to ready queue.
+going to schedule process 0 to run.
+==========Command End============
+
+Mingxin_Yang@ymx:/RAMDISK0 Next command: /bin/app_cd ./RAMDISK0
+
+==========Command Start============
+
+User call fork.
+will fork a child from parent 0.
+cannot find any free process structure.
+
+System is shutting down with exit code -1.

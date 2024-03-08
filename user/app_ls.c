@@ -32,9 +32,13 @@ int dir_print(int dir_fd, char *path, int times){
     memcpy(inpath + strlen(path) + 1, dir.name, strlen(dir.name) + 1);
 
     int dir_fd_in = opendir_u(inpath);
-    times_ = times + 1;
-    dir_print(dir_fd_in, inpath, times_);
-    closedir_u(dir_fd_in);
+    // printu("%d", dir_fd_in);
+    if(dir_fd_in != -1){
+      times_ = times + 1;
+      dir_print(dir_fd_in, inpath, times_);
+      closedir_u(dir_fd_in);
+    }
+    
   }
   return 0;
 }
@@ -42,6 +46,12 @@ int dir_print(int dir_fd, char *path, int times){
 int main(int argc, char *argv[]) {
   char *path = argv[0];
   int dir_fd = opendir_u(path);
+  // printu("%d", dir_fd);
+  if(dir_fd == -1){
+    printu("Donnot ls for a file !");
+    exit(0);
+    return 0;
+  }
   int times = 0;
   printu("---------- ls command -----------\n");
   printu("ls \"%s\":\n", path);

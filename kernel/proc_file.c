@@ -323,8 +323,7 @@ static void exec_bincode(process *p, char *path){
         memset(pa, 0, PGSIZE);
         user_vm_map((pagetable_t)p->pagetable, ph_addr.vaddr, PGSIZE, (uint64)pa, prot_to_type(PROT_WRITE | PROT_READ | PROT_EXEC, 1));
         spike_file_lseek(f, ph_addr.off, SEEK_SET);
-        if (spike_file_read(f, pa, ph_addr.memsz) != ph_addr.memsz)
-        {
+        if (spike_file_read(f, pa, ph_addr.memsz) != ph_addr.memsz){
             panic("read program segment error.\n");
         }
 
@@ -358,8 +357,7 @@ static void exec_bincode(process *p, char *path){
 
 int do_exec(char *path_, char *arg_){
 
-	int PathLen = strlen(path_);
-	char path[PathLen + 1];
+	char path[256];
 	strcpy(path, path_);
 	int ArgLen = strlen(arg_);
 	char arg[ArgLen + 1];
