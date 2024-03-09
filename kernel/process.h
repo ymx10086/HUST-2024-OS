@@ -56,18 +56,35 @@ typedef struct mapped_region {
   uint32 seg_type; // segment type, one of the segment_types
 } mapped_region;
 
-typedef struct process_heap_manager {
-  // points to the last free page in our simple heap.
-  uint64 heap_top;
-  // points to the bottom of our simple heap.
-  uint64 heap_bottom;
+// typedef struct process_heap_manager {
+//   // points to the last free page in our simple heap.
+//   uint64 heap_top;
+//   // points to the bottom of our simple heap.
+//   uint64 heap_bottom;
 
-  // the address of free pages in the heap
-  uint64 free_pages_address[MAX_HEAP_PAGES];
-  // the number of free pages in the heap
-  uint32 free_pages_count;
-}process_heap_manager;
+//   // the address of free pages in the heap
+//   uint64 free_pages_address[MAX_HEAP_PAGES];
+//   // the number of free pages in the heap
+//   uint32 free_pages_count;
+// }process_heap_manager;
 
+typedef struct process_heap_manager
+{
+    uint64 mem_used;
+    uint64 mem_free;
+    uint64 g_ufree_page;
+
+
+    // points to the last free page in our simple heap.
+    uint64 heap_top;
+    // points to the bottom of our simple heap.
+    uint64 heap_bottom;
+
+    // the address of free pages in the heap
+    uint64 free_pages_address[MAX_HEAP_PAGES];
+    // the number of free pages in the heap
+    uint32 free_pages_count;
+} process_heap_manager;
 
 
 // the extremely simple definition of process, used for begining labs of PKE
@@ -102,9 +119,9 @@ typedef struct process_t {
   // file system. added @lab4_1
   proc_file_management *pfiles;
 
-  // ! add for lab2_challenge2
-  uint64 mem_used; // used mem va
-  uint64 mem_free; // free mem va
+  // // ! add for lab2_challenge2
+  // uint64 mem_used; // used mem va
+  // uint64 mem_free; // free mem va
 }process;
 
 // switch to run user app
@@ -126,7 +143,7 @@ extern process* current;
 void exec_clean(process* p);
 
 // address of the first free page in our simple heap. added @lab2_2
-extern uint64 g_ufree_page;
+// extern uint64 g_ufree_page;
 
 // ! add for lab3_challenge2
 typedef struct semaphore_t {
@@ -148,5 +165,7 @@ int p_sem(int sem);
 // ! add for lab2_challenge2
 void* better_alloc(uint64 n); 
 void better_free(uint64 va); 
+
+void cow_vm_map(pagetable_t page_dir, uint64 va, uint64 pa);
 
 #endif

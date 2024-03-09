@@ -109,6 +109,18 @@ uint64 sys_user_free_page(uint64 va) {
   return 0;
 }
 
+// ! add for lab2_challenge2
+uint64 sys_user_better_malloc(uint64 n) {
+
+  return (uint64)better_alloc(n);
+}
+
+uint64 sys_user_better_free(uint64 va) {
+  // best_free(va);
+  better_free(va);
+  return 0;
+}
+
 //
 // kerenl entry point of naive_fork
 //
@@ -283,9 +295,11 @@ ssize_t sys_user_wait(int pid) {
 }
 
 int sys_user_exec(char *pathva, char *arg){
+
+  
 	char *pathpa = (char *)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
 	char* argpa = (char* )user_va_to_pa((pagetable_t)(current->pagetable), arg);
-	
+
   int ret = do_exec(pathpa, argpa);
 	return ret;
 }
@@ -316,18 +330,6 @@ ssize_t sys_sem_P(uint64 sem) {
 //
 ssize_t sys_sem_V(uint64 sem) {
   return v_sem(sem);
-}
-
-// ! add for lab2_challenge2
-uint64 sys_user_better_malloc(uint64 n) {
-
-  return (uint64)better_alloc(n);
-}
-
-uint64 sys_user_better_free(uint64 va) {
-  // best_free(va);
-  better_free(va);
-  return 0;
 }
 
 

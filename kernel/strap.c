@@ -13,6 +13,8 @@
 
 #include "spike_interface/spike_utils.h"
 
+#include "string.h"
+
 //
 // handling the syscalls. will call do_syscall() defined in kernel/syscall.c
 //
@@ -57,6 +59,7 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
   sprint("handle_page_fault: %lx\n", stval);
   switch (mcause) {
     case CAUSE_STORE_PAGE_FAULT:{
+
     // TODO (lab2_3): implement the operations that solve the page fault to
     // dynamically increase application stack.
     // hint: first allocate a new physical page, and then, maps the new page to the
@@ -70,14 +73,24 @@ void handle_user_page_fault(uint64 mcause, uint64 sepc, uint64 stval) {
         panic("Can not allocate a new physical page.\n");
       map_pages(current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, pa, prot_to_type(PROT_READ | PROT_WRITE, 1)); // maps the new page to the virtual address that causes the page fault
     }
+    // else if(*pte & PTE_C){
+    //   sprint("copy on write\n");
+    //   pa = PTE2PA(*pte);
+    //   heap_copy_on_write(current, current->parent, pa);
+    // }
     else if(*pte & PTE_C){
-      sprint("copy on write\n");
-      pa = PTE2PA(*pte);
-      heap_copy_on_write(current, current->parent, pa);
+      void *pa_cp = alloc_page();
+      uint64 origin_pa = PTE2PA(*pte);
+      uint64 print_pa = origin_pa + (stval & ((1 << PGSHIFT) - 1));
+      sprint("%p\n", print_pa);
+      memcpy(pa_cp, (void*)origin_pa, PGSIZE);
+      // free_page((void *)origin_pa);
+      *pte = PA2PTE(pa_cp) | PTE_V | prot_to_type(PROT_WRITE | PROT_READ, 1);
     }
   }
     default:
-      sprint("unknown page fault.\n");
+      // sprint("unknown page fault.\n");
+      // panic("wrong");
       break;
   }
 }

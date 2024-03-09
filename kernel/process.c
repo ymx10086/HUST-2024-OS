@@ -33,7 +33,7 @@ process procs[NPROC];
 process *current = NULL;
 
 // points to the first free page in our simple heap. added @lab2_2
-uint64 g_ufree_page = USER_FREE_ADDRESS_START;
+// uint64 g_ufree_page = USER_FREE_ADDRESS_START;
 
 //
 // switch to a user-mode process
@@ -143,10 +143,15 @@ process *alloc_process(){
 	sprint("in alloc_proc. user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n",
 		   procs[i].trapframe, procs[i].trapframe->regs.sp, procs[i].kstack);
 
-	// initialize the process's heap manager
-	procs[i].user_heap.heap_top = USER_FREE_ADDRESS_START;
-	procs[i].user_heap.heap_bottom = USER_FREE_ADDRESS_START;
-	procs[i].user_heap.free_pages_count = 0;
+	// // initialize the process's heap manager
+	// procs[i].user_heap.heap_top = USER_FREE_ADDRESS_START;
+	// procs[i].user_heap.heap_bottom = USER_FREE_ADDRESS_START;
+	// procs[i].user_heap.free_pages_count = 0;
+
+  // initialize the process's heap manager
+	procs[i].user_heap.mem_free = -1;
+	procs[i].user_heap.mem_used = -1;
+	procs[i].user_heap.g_ufree_page = USER_FREE_ADDRESS_START;
 
 	// map user heap in userspace
 	procs[i].mapped_info[HEAP_SEGMENT].va = USER_FREE_ADDRESS_START;
@@ -163,9 +168,6 @@ process *alloc_process(){
 
 	procs[i].parent = NULL;
 
-  procs[i].mem_free = -1;
-  procs[i].mem_used = -1;
-
 	// return after initialization.
 	return &procs[i];
 }
@@ -180,11 +182,11 @@ int free_process(process *proc) {
   // as it is different from regular OS, which needs to run 7x24.
   proc->status = ZOMBIE;
 
-  for (uint64 heap_block = proc->user_heap.heap_bottom;
-    heap_block < proc->user_heap.heap_top; heap_block += PGSIZE) {
+//   for (uint64 heap_block = proc->user_heap.heap_bottom;
+//     heap_block < proc->user_heap.heap_top; heap_block += PGSIZE) {
   
-   user_vm_unmap(proc->pagetable, heap_block, PGSIZE, 0); 
-}
+//    user_vm_unmap(proc->pagetable, heap_block, PGSIZE, 0); 
+// }
 
   // add for lab3_challenge1
   if (proc->parent != NULL && proc->parent->status == BLOCKED) {
@@ -209,7 +211,7 @@ int do_fork(process *parent) {
   // sprint("Num of parent->total_mapped_region: %d\n", parent->total_mapped_region);
 
   // for(int i = 0; i < parent->total_mapped_region; i++){
-  //   sprint("title : %d\n", parent->mapped_info[i].seg_type);
+    // sprint("title : %d\n", parent->mapped_info[i].seg_type);
   // }
 
   for (int i = 0; i < parent->total_mapped_region; i++) {
@@ -225,18 +227,32 @@ int do_fork(process *parent) {
         break;
       case HEAP_SEGMENT:
 
-        for (uint64 heap_block = current->user_heap.heap_bottom;
-            heap_block < current->user_heap.heap_top; heap_block += PGSIZE) {
-          uint64 parent_pa = lookup_pa(parent->pagetable, heap_block);
+        // for (uint64 heap_block = current->user_heap.heap_bottom;
+        //     heap_block < current->user_heap.heap_top; heap_block += PGSIZE) {
+        //   uint64 parent_pa = lookup_pa(parent->pagetable, heap_block);
           
-          user_vm_map((pagetable_t)child->pagetable, heap_block, PGSIZE, parent_pa,
-                      prot_to_type(PROT_READ, 1));
+        //   user_vm_map((pagetable_t)child->pagetable, heap_block, PGSIZE, parent_pa,
+        //               prot_to_type(PROT_READ, 1));
           
-          pte_t *child_pte = page_walk(child->pagetable, heap_block, 0);
-          *child_pte |= PTE_C; 
-          pte_t *parent_pte = page_walk(parent->pagetable, heap_block, 0);
-          *parent_pte &= (~PTE_W); 
+        //   pte_t *child_pte = page_walk(child->pagetable, heap_block, 0);
+        //   *child_pte |= PTE_C; 
+        //   pte_t *parent_pte = page_walk(parent->pagetable, heap_block, 0);
+        //   *parent_pte &= (~PTE_W); 
+        // }
+        uint64 free_va = parent->user_heap.mem_free;
+        while (free_va != -1){
+            uint64 free_pa = (uint64)(user_va_to_pa((pagetable_t)parent->pagetable, (void *)free_va));
+            cow_vm_map((pagetable_t)child->pagetable, free_va, free_pa);
+            free_va = ((mem_block *)free_pa)->next;
         }
+        uint64 used_va = parent->user_heap.mem_used;
+        while (used_va != -1){
+            uint64 used_pa = (uint64)(user_va_to_pa((pagetable_t)parent->pagetable, (void *)used_va));
+            cow_vm_map((pagetable_t)child->pagetable, used_va, used_pa);
+            used_va = ((mem_block *)used_pa)->next;
+        }
+
+        // sprint("free_va : %d, used_va : %d\n", free_va, used_va);
         child->mapped_info[HEAP_SEGMENT].npages = parent->mapped_info[HEAP_SEGMENT].npages;
         memcpy((void*)&child->user_heap, (void*)&parent->user_heap, sizeof(parent->user_heap));
         break;
@@ -306,8 +322,6 @@ int do_fork(process *parent) {
   child->status = READY;
   child->trapframe->regs.a0 = 0;
   child->parent = parent;
-  child->mem_free = parent->mem_free;
-  child->mem_used = parent->mem_used;
   insert_to_ready_queue(child);
 
   return child->pid;
@@ -385,10 +399,15 @@ void exec_clean(process* p) {
     p->mapped_info[SYSTEM_SEGMENT].npages = 1;
     p->mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
 
+    // // initialize the process's heap manager
+    // p->user_heap.heap_top = USER_FREE_ADDRESS_START;
+    // p->user_heap.heap_bottom = USER_FREE_ADDRESS_START;
+    // p->user_heap.free_pages_count = 0;
+
     // initialize the process's heap manager
-    p->user_heap.heap_top = USER_FREE_ADDRESS_START;
-    p->user_heap.heap_bottom = USER_FREE_ADDRESS_START;
-    p->user_heap.free_pages_count = 0;
+    p->user_heap.mem_free = -1;
+    p->user_heap.mem_used = -1;
+    p->user_heap.g_ufree_page = USER_FREE_ADDRESS_START;
 
     // map user heap in userspace
     p->mapped_info[HEAP_SEGMENT].va = USER_FREE_ADDRESS_START;
@@ -452,19 +471,19 @@ int p_sem(int sem) {
 //// insert for free chain
 //
 static void insert_into_free(uint64 mem_va){
-	if (current->mem_free == -1){
+	if (current->user_heap.mem_free == -1){
 		mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
 		mem_pa->next = -1;
-		current->mem_free = mem_va;
+		current->user_heap.mem_free = mem_va;
 		return;
 	}
 	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
-	uint64 current_va = current->mem_free;
-	mem_block *current_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)current->mem_free));
+	uint64 current_va = current->user_heap.mem_free;
+	mem_block *current_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)current->user_heap.mem_free));
 	// judge if insert into the head of the chain
 	if (current_pa->cap > mem_pa->cap){
-		mem_pa->next = current->mem_free;
-		current->mem_free = mem_va;
+		mem_pa->next = current->user_heap.mem_free;
+		current->user_heap.mem_free = mem_va;
 		return;
 	}
   // insert into the correct location
@@ -485,8 +504,8 @@ static void insert_into_free(uint64 mem_va){
 // 
 static void insert_into_used(uint64 mem_va){
 	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
-	mem_pa->next = current->mem_used;
-	current->mem_used = mem_va;
+	mem_pa->next = current->user_heap.mem_used;
+	current->user_heap.mem_used = mem_va;
 }
 
 static void remove_ptr(uint64 *head, uint64 mem_va)
@@ -520,13 +539,13 @@ static void alloc_from_free(uint64 va, uint64 n){
 		mem_block *free_mem_pa = (mem_block *)user_va_to_pa((pagetable_t)current->pagetable, (void *)free_mem);
 		free_mem_pa->cap = va + pa->cap - next_mem_addr;
 		pa->cap = next_mem_addr - va;
-		remove_ptr(&(current->mem_free), va);
+		remove_ptr(&(current->user_heap.mem_free), va);
     // update the chain of used and free
 		insert_into_used(va);
 		insert_into_free(free_mem);
 	}
 	else{
-		remove_ptr(&(current->mem_free), va);
+		remove_ptr(&(current->user_heap.mem_free), va);
     // update the chain of used
 		insert_into_used(va);
 	}
@@ -534,28 +553,29 @@ static void alloc_from_free(uint64 va, uint64 n){
 
 // free + new_page
 static void alloc_from_free_and_g_ufree_page(uint64 va, uint64 n) {
-	remove_ptr(&(current->mem_free), va); 
+	remove_ptr(&(current->user_heap.mem_free), va); 
 	mem_block* pa = (mem_block*)(user_va_to_pa((pagetable_t)current->pagetable, (void*)va));
 	uint64 unallocated = n - (pa->cap - sizeof(mem_block)); // 还有remain个字节需要分配
 	uint64 new_pages = unallocated / PGSIZE + (unallocated % PGSIZE != 0); // 需要new_pages个页面
 	
   // allovation
   uint64 current_pages = new_pages;
-  uint64 current_va = g_ufree_page;
+  // uint64 current_va = g_ufree_page;
+  uint64 current_va = current->user_heap.g_ufree_page;
 	while(current_pages--){
 		uint64 new_pa = (uint64)alloc_page();
 		memset((void *)new_pa, 0, PGSIZE);
 		user_vm_map((pagetable_t)current->pagetable, current_va, PGSIZE, new_pa,
 					prot_to_type(PROT_WRITE | PROT_READ, 1));
-    g_ufree_page += PGSIZE;
-    current_va = g_ufree_page;
+    current->user_heap.g_ufree_page += PGSIZE;
+    current_va = current->user_heap.g_ufree_page;
 	}
 
 	uint64 last_page_use = unallocated % PGSIZE;
 	if (last_page_use != 0){
-		uint64 next_mem_addr = get_next_mem_addr(g_ufree_page - PGSIZE + last_page_use);
+		uint64 next_mem_addr = get_next_mem_addr(current->user_heap.g_ufree_page - PGSIZE + last_page_use);
     // sprint("NEXT : %d", next_mem_addr);
-		if (g_ufree_page - next_mem_addr > sizeof(mem_block)) {
+		if (current->user_heap.g_ufree_page - next_mem_addr > sizeof(mem_block)) {
 		
 			mem_block* free_pa = (mem_block*)(user_va_to_pa((pagetable_t)current->pagetable, (void*)next_mem_addr));
 			free_pa->next = -1;
@@ -575,19 +595,19 @@ static void *alloc_from_g_ufree_page(uint64 n){
 
 	// calu counts of pages
 	uint64 pages = (n + sizeof(mem_block) + PGSIZE - 1) / PGSIZE;
-	uint64 first_page_va = g_ufree_page;
-	uint64 last_page_va = g_ufree_page + (pages - 1) * PGSIZE;  
+	uint64 first_page_va = current->user_heap.g_ufree_page;
+	uint64 last_page_va = current->user_heap.g_ufree_page + (pages - 1) * PGSIZE;  
 
 	// allovation
   uint64 current_pages = pages;
-  uint64 current_va = g_ufree_page;
+  uint64 current_va = current->user_heap.g_ufree_page;
 	while(current_pages--){
 		uint64 pa = (uint64)alloc_page();
 		memset((void *)pa, 0, PGSIZE);
 		user_vm_map((pagetable_t)current->pagetable, current_va, PGSIZE, pa,
 					prot_to_type(PROT_WRITE | PROT_READ, 1));
-    g_ufree_page += PGSIZE;
-    current_va = g_ufree_page;
+    current->user_heap.g_ufree_page += PGSIZE;
+    current_va = current->user_heap.g_ufree_page;
 	}
 
 	// control the memory
@@ -617,8 +637,8 @@ static void *alloc_from_g_ufree_page(uint64 n){
 
 void *better_alloc(uint64 n){ 
   
-	if (current->mem_free == -1) return alloc_from_g_ufree_page(n); 
-	uint64 va = current->mem_free;
+	if (current->user_heap.mem_free == -1) return alloc_from_g_ufree_page(n); 
+	uint64 va = current->user_heap.mem_free;
 	uint64 max_va = va; // record the max va
   uint64 va_ptr;
 	while (va != -1){
@@ -633,7 +653,7 @@ void *better_alloc(uint64 n){
 	}
 
 	mem_block* max_pa = (mem_block*)user_va_to_pa((pagetable_t)current->pagetable, (void *)max_va);
-	if (max_va + max_pa->cap == g_ufree_page){
+	if (max_va + max_pa->cap == current->user_heap.g_ufree_page){
 
 		va_ptr = max_va + sizeof(mem_block); 
 		alloc_from_free_and_g_ufree_page(max_va, n);
@@ -645,7 +665,13 @@ void *better_alloc(uint64 n){
 void better_free(uint64 va){
 
 	uint64 p = va - sizeof(mem_block); 
-	remove_ptr(&(current->mem_used), p);
+	remove_ptr(&(current->user_heap.mem_used), p);
 	insert_into_free(p);
 	return;
+}
+
+void cow_vm_map(pagetable_t page_dir, uint64 va, uint64 pa){
+	pte_t *pte = page_walk(page_dir, va, 1);
+	*pte = PA2PTE(pa) | PTE_V | PTE_R | PTE_U | PTE_A | PTE_C;
+
 }

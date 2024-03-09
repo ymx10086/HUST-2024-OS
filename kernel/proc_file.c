@@ -356,16 +356,19 @@ static void exec_bincode(process *p, char *path){
 }
 
 int do_exec(char *path_, char *arg_){
-
-	char path[256];
+   
+	int PathLen = strlen(path_);
+	char path[PathLen + 1];
 	strcpy(path, path_);
 	int ArgLen = strlen(arg_);
 	char arg[ArgLen + 1];
 	strcpy(arg, arg_);
+
+  sprint("=============");
   
 	exec_clean(current);
 
-  // sprint("Path : %s, arg : %s \n", path, arg);
+  sprint("Path : %s, arg : %s \n", path, arg);
 	
 	uint64 argv_va = current->trapframe->regs.sp - ArgLen - 1;
 	argv_va = argv_va - argv_va % 8; 

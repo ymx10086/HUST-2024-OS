@@ -9,8 +9,8 @@
 #include "util/types.h"
 
 int main(int argc, char *argv[]) {
-  int *heap_data = naive_malloc();
-  int *heap_data1 = naive_malloc();
+  int *heap_data = better_malloc(20);
+  int *heap_data1 = better_malloc(20);
   printu("the physical address of parent process heap is: ");
   printpa(heap_data);
   printpa(heap_data1);

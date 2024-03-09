@@ -34,16 +34,14 @@ int main(int argc, char *argv[]) {
     printu("==========Command Start============\n\n");
     int ret = 0;
     int pid = fork();
-    
-      
     if(pid == 0) {
-      printu("yes");
+      // printu("Next command: %s %s\n\n", command, para);
       ret = exec(command, para);
+      
       if (ret == -1)
       printu("exec failed!\n");
     }
-    else
-    {
+    else{
       wait(pid);
       printu("==========Command End============\n\n");
     }
