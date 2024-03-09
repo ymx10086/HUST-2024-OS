@@ -234,10 +234,24 @@ int sem_P(int sem) {
   return do_user_call(SYS_sem_P, (uint64) sem, 0, 0, 0, 0, 0, 0);
 }
 
-// # added @ lab3_challenge2
+//  add for lab3_challenge2
 //
 // lib call to sem_V
 //
 int sem_V(int sem) {
   return do_user_call(SYS_sem_V, (uint64) sem, 0, 0, 0, 0, 0, 0);
+}
+
+//
+// lib call to better_malloc
+//
+void* better_malloc(int n) {
+  return (void*)do_user_call(SYS_user_better_allocate_page, n, 0, 0, 0, 0, 0, 0);
+}
+
+//
+// lib call to better_free
+//
+void better_free(void* va) {
+  do_user_call(SYS_user_better_free_page, (uint64)va, 0, 0, 0, 0, 0, 0);
 }

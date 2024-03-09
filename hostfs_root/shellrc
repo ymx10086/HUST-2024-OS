@@ -10,6 +10,7 @@
 /bin/app_pwd
 /bin/app_cow
 /bin/app_semaphore
+/bin/app_singlepageheap
 /bin/app_cd /RAMDISK0
 /bin/app_cd ./sub_dir
 /bin/app_cd ..

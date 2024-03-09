@@ -68,6 +68,8 @@ typedef struct process_heap_manager {
   uint32 free_pages_count;
 }process_heap_manager;
 
+
+
 // the extremely simple definition of process, used for begining labs of PKE
 typedef struct process_t {
   // pointing to the stack used in trap handling.
@@ -99,6 +101,10 @@ typedef struct process_t {
 
   // file system. added @lab4_1
   proc_file_management *pfiles;
+
+  // ! add for lab2_challenge2
+  uint64 mem_used; // used mem va
+  uint64 mem_free; // free mem va
 }process;
 
 // switch to run user app
@@ -138,5 +144,9 @@ int v_sem(int sem);
 
 // decrease the semaphore.
 int p_sem(int sem);
+
+// ! add for lab2_challenge2
+void* better_alloc(uint64 n); 
+void better_free(uint64 va); 
 
 #endif

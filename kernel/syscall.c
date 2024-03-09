@@ -318,6 +318,18 @@ ssize_t sys_sem_V(uint64 sem) {
   return v_sem(sem);
 }
 
+// ! add for lab2_challenge2
+uint64 sys_user_better_malloc(uint64 n) {
+
+  return (uint64)better_alloc(n);
+}
+
+uint64 sys_user_better_free(uint64 va) {
+  // best_free(va);
+  better_free(va);
+  return 0;
+}
+
 
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
@@ -393,6 +405,12 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_sem_P(a1);
     case SYS_sem_V:
       return sys_sem_V(a1);
+
+    // ! add for lab2_challenge2
+    case SYS_user_better_allocate_page:
+      return sys_user_better_malloc(a1); 
+    case SYS_user_better_free_page:
+      return sys_user_better_free(a1); 
     default:
       panic("Unknown syscall %ld \n", a0);
   }
