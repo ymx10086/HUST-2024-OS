@@ -8,6 +8,7 @@
 /bin/app_ls ./sub_dir
 /bin/app_ls /RAMDISK0
 /bin/app_pwd
+/bin/app_errorline
 /bin/app_cow
 /bin/app_semaphore
 /bin/app_singlepageheap

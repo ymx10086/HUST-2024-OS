@@ -16,12 +16,12 @@ int main(int argc, char *argv[]) {
   printpa(heap_data1);
   int pid = fork();
   if (pid == 0) {
-    printu("the physical address of child process heap before copy on write is: ");
+    printu("the physical address of child process heap before copy on write is: \n");
     printpa(heap_data);
     printpa(heap_data1);
     heap_data[0] = 0;
     heap_data1[0] = 0;
-    printu("the physical address of child process heap after copy on write is: ");
+    printu("the physical address of child process heap after copy on write is: \n");
     printpa(heap_data);
     printpa(heap_data1);
   }

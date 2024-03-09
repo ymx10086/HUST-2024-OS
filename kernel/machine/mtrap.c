@@ -14,6 +14,56 @@ static void handle_misaligned_load() { panic("Misaligned Load!"); }
 
 static void handle_misaligned_store() { panic("Misaligned AMO!"); }
 
+// ! add for lab1_challenge2
+#include "string.h" 
+char error_path[128], error_code[10240];
+struct stat tmp_stat;
+
+// Parameter is the entry of array "process-line".
+// line_show prints the code line the entry points to.
+//
+void line_show(addr_line *line) {
+  
+  int len = strlen(current->dir[current->file[line->file].dir]);
+  // get construct path
+  strcpy(error_path, current->dir[current->file[line->file].dir]);
+  // sprint("Error : %s", error_path);
+  error_path[len] = '/';
+  strcpy(error_path + len + 1, current->file[line->file].file);
+
+  // read and print code line
+  spike_file_t *f = spike_file_open(error_path, O_RDONLY, 0);
+  spike_file_stat(f, &tmp_stat);
+  spike_file_read(f, error_code, tmp_stat.st_size);
+  spike_file_close(f);
+
+  for (int off = 0, line_cnt = 0; off < tmp_stat.st_size; line_cnt++) {
+    int tmp_off = off;
+    while (tmp_off < tmp_stat.st_size && error_code[tmp_off] != '\n') tmp_off++;
+    if (line_cnt == line->line - 1) {
+        error_code[tmp_off] = '\0';
+        sprint("Runtime error at %s:%d\n%s\n", error_path, line->line, error_code + off);
+        break;
+    }
+    off = tmp_off + 1;
+  }
+}
+
+//
+// Find the "process->line" array entry
+//
+void error_displayer() {
+  uint64 mepc = read_csr(mepc);
+  // sprint("%p", mepc);
+  for (int i = 0; i < current->line_ind; i++) {
+    // find the exception line table entry
+    if (mepc < current->line[i].addr) {
+      line_show(current->line + i - 1);
+      break;
+    }
+  }
+}
+
 // added @lab1_3
 static void handle_timer() {
   int cpuid = 0;
@@ -44,7 +94,8 @@ void handle_mtrap() {
     case CAUSE_ILLEGAL_INSTRUCTION:
       // TODO (lab1_2): call handle_illegal_instruction to implement illegal instruction
       // interception, and finish lab1_2.
-      //panic( "call handle_illegal_instruction to accomplish illegal instruction interception for lab1_2.\n" );
+      // panic( "call handle_illegal_instruction to accomplish illegal instruction interception for lab1_2.\n" );
+      error_displayer();
       handle_illegal_instruction();
 
       break;
