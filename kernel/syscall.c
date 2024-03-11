@@ -133,7 +133,7 @@ uint64 sys_user_better_free(uint64 va) {
 //
 ssize_t sys_user_fork() {
   uint64 hartid = read_tp();
-  sprint("User call fork.\n");
+  sprint("hartid = %lld: User call fork.\n", hartid);
   return do_fork( current[hartid] );
 }
 

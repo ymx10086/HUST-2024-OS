@@ -160,8 +160,8 @@ process *alloc_process(){
 	procs[i].mapped_info[SYSTEM_SEGMENT].npages = 1;
 	procs[i].mapped_info[SYSTEM_SEGMENT].seg_type = SYSTEM_SEGMENT;
 
-	sprint("in alloc_proc. user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n",
-		   procs[i].trapframe, procs[i].trapframe->regs.sp, procs[i].kstack);
+	sprint("hartid = %lld: in alloc_proc. user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n",
+		   hartid, procs[i].trapframe, procs[i].trapframe->regs.sp, procs[i].kstack);
 
 	// // initialize the process's heap manager
 	// procs[i].user_heap.heap_top = USER_FREE_ADDRESS_START;
@@ -182,7 +182,7 @@ process *alloc_process(){
 
 	// initialize files_struct
 	procs[i].pfiles = init_proc_file_management();
-	sprint("in alloc_proc. build proc_file_management successfully.\n");
+	sprint("hartid = %lld: in alloc_proc. build proc_file_management successfully.\n", hartid);
 
   // sprint("raii : %s\n", procs[i].pfiles->cwd->name);
 
@@ -227,7 +227,7 @@ int free_process(process *proc) {
 // for the child.
 //
 int do_fork(process *parent) {
-  sprint("will fork a child from parent %d.\n", parent->pid);
+  sprint("hartid = %lld: will fork a child from parent %d.\n", read_tp(), parent->pid);
   process *child = alloc_process();
 
   // sprint("Num of parent->total_mapped_region: %d\n", parent->total_mapped_region);
@@ -299,7 +299,7 @@ int do_fork(process *parent) {
 
         // ! add for lab3_challenge1
         uint64 pa_of_mapped_va_child = lookup_pa(parent->pagetable, parent->mapped_info[i].va);
-        sprint("do_fork map code segment at pa:%lx of parent to child at va:%lx.\n", pa_of_mapped_va_child, parent->mapped_info[i].va);
+        sprint("hartid = %lld: do_fork map code segment at pa:%lx of parent to child at va:%lx.\n", read_tp(), pa_of_mapped_va_child, parent->mapped_info[i].va);
 
         // after mapping, register the vm region (do not delete codes below!)
         child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;

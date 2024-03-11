@@ -247,10 +247,10 @@ elf_status elf_load(elf_ctx *ctx) {
     // SEGMENT_READABLE, SEGMENT_EXECUTABLE, SEGMENT_WRITABLE are defined in kernel/elf.h
     if( ph_addr.flags == (SEGMENT_READABLE|SEGMENT_EXECUTABLE) ){
       ((process*)(((elf_info*)(ctx->info))->p))->mapped_info[j].seg_type = CODE_SEGMENT;
-      sprint( "CODE_SEGMENT added at mapped info offset:%d\n", j );
+      sprint( "hartid = %lld: CODE_SEGMENT added at mapped info offset:%d\n", read_tp(), j );
     }else if ( ph_addr.flags == (SEGMENT_READABLE|SEGMENT_WRITABLE) ){
       ((process*)(((elf_info*)(ctx->info))->p))->mapped_info[j].seg_type = DATA_SEGMENT;
-      sprint( "DATA_SEGMENT added at mapped info offset:%d\n", j );
+      sprint( "hartid = %lld: DATA_SEGMENT added at mapped info offset:%d\n", read_tp(), j );
     }else
       panic( "unknown program segment encountered, segment flag:%d.\n", ph_addr.flags );
 
@@ -284,7 +284,7 @@ elf_status elf_load(elf_ctx *ctx) {
 //
 void load_bincode_from_host_elf(process *p, char *filename) {
   uint64 hartid = read_tp();
-  sprint("hartid = %lld >> Application: %s\n", hartid, filename);
+  sprint("hartid = %lld: Application: %s\n", hartid, filename);
 
   //elf loading. elf_ctx is defined in kernel/elf.h, used to track the loading process.
   elf_ctx elfloader;
@@ -310,5 +310,5 @@ void load_bincode_from_host_elf(process *p, char *filename) {
   // close the vfs file
   vfs_close( info.f );
 
-  sprint("hartid = %lld >> Application program entry point (virtual address): 0x%lx\n", hartid, p->trapframe->epc);
+  sprint("hartid = %lld: Application program entry point (virtual address): 0x%lx\n", hartid, p->trapframe->epc);
 }

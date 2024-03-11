@@ -14,7 +14,7 @@ process* ready_queue_head[NCPU] = {NULL};
 //
 void insert_to_ready_queue( process* proc ) {
   uint64 hartid = read_tp();
-  sprint("hartid = %lld >> going to insert process %d to ready queue.\n", hartid, proc->pid);
+  sprint("hartid = %lld: going to insert process %d to ready queue.\n", hartid, proc->pid);
   // if the queue is empty in the beginning
   if( ready_queue_head[hartid] == NULL ){
     proc->status = READY;
@@ -52,30 +52,34 @@ void schedule() {
 
   uint64 hartid = read_tp();
   if ( !ready_queue_head[hartid] ){
-    if(cpu_tag[hartid]) return;
-    cpu_tag[hartid] = 1;
-    // by default, if there are no ready process, and all processes are in the status of
-    // FREE and ZOMBIE, we should shutdown the emulated RISC-V machine.
-    int should_shutdown = 1;
+    if(!cpu_tag[hartid]){
+      cpu_tag[hartid] = 1;
+      // by default, if there are no ready process, and all processes are in the status of
+      // FREE and ZOMBIE, we should shutdown the emulated RISC-V machine.
+      int should_shutdown = 1;
 
-    for( int i=0; i<NPROC; i++ )
-      if( (procs[i].status != FREE) && (procs[i].status != ZOMBIE) ){
-        // should_shutdown = 0;
-        sprint( "hartid = %lld >> ready queue empty, but process %d is not in free/zombie state:%d, maybe other cpu still have process should be done\n", 
-          hartid, i, procs[i].status );
-      }
-
-    if( should_shutdown ){
-        // ! add for lab1_challenge3
-        sync_barrier(&shutdown_mutex, NCPU);
-        if(!read_tp()){
-          sprint("hartid = %d: shutdown with code:%d.\n", read_tp(), 0);
-          shutdown( 0 );
+      for( int i=0; i<NPROC; i++ )
+        if( (procs[i].status != FREE) && (procs[i].status != ZOMBIE) ){
+          // should_shutdown = 0;
+          sprint( "hartid = %lld: ready queue empty, but process %d is not in free/zombie state:%d, maybe other cpu still have process should be done\n", 
+            hartid, i, procs[i].status );
         }
-      // sprint( "no more ready processes, system shutdown now.\n" );
-      // shutdown( 0 );
-    }else{
-      panic( "Not handled: we should let system wait for unfinished processes.\n" );
+
+      if( should_shutdown ){
+          // ! add for lab1_challenge3
+          sync_barrier(&shutdown_mutex, NCPU);
+          if(!read_tp()){
+            sprint("hartid = %d: shutdown with code:%d.\n", read_tp(), 0);
+            shutdown( 0 );
+          }
+        // sprint( "no more ready processes, system shutdown now.\n" );
+        // shutdown( 0 );
+      }else{
+        panic( "Not handled: we should let system wait for unfinished processes.\n" );
+      }
+    }
+    else{
+      schedule();
     }
   }
 
@@ -84,6 +88,6 @@ void schedule() {
   ready_queue_head[hartid] = ready_queue_head[hartid]->queue_next;
 
   current[hartid]->status = RUNNING;
-  sprint( "going to schedule process %d to run.\n", current[hartid]->pid );
+  sprint( "hartid = %lld: going to schedule process %d to run.\n", hartid, current[hartid]->pid );
   switch_to( current[hartid] );
 }

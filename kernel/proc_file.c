@@ -50,7 +50,7 @@ proc_file_management *init_proc_file_management(void) {
   for (int fd = 0; fd < MAX_FILES; ++fd)
     pfiles->opened_files[fd].status = FD_NONE;
 
-  sprint("FS: created a file management struct for a process.\n");
+  sprint("hartid = %lld: FS: created a file management struct for a process.\n", read_tp());
   return pfiles;
 }
 
@@ -306,7 +306,7 @@ int do_unlink(char *path) {
 
 // load exec
 static void exec_bincode(process *p, char *path){
-    sprint("Application: %s\n", path);
+    sprint("hartid = %lld: Application: %s\n", read_tp(), path);
     int fp = do_open(path, O_RDONLY);
     spike_file_t *f = (spike_file_t *)(get_opened_file(fp)->f_dentry->dentry_inode->i_fs_info); 
     elf_header ehdr;
@@ -342,11 +342,11 @@ static void exec_bincode(process *p, char *path){
         // SEGMENT_READABLE, SEGMENT_EXECUTABLE, SEGMENT_WRITABLE are defined in kernel/elf.h
         if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_EXECUTABLE)){
             p->mapped_info[pos].seg_type = CODE_SEGMENT;
-            sprint("CODE_SEGMENT added at mapped info offset:%d\n", pos);
+            sprint("hartid = %lld: CODE_SEGMENT added at mapped info offset:%d\n", read_tp(), pos);
         }
         else if (ph_addr.flags == (SEGMENT_READABLE | SEGMENT_WRITABLE)){
             p->mapped_info[pos].seg_type = DATA_SEGMENT;
-            sprint("DATA_SEGMENT added at mapped info offset:%d\n", pos);
+            sprint("hartid = %lld: DATA_SEGMENT added at mapped info offset:%d\n", read_tp(), pos);
         }
         else
             panic("unknown program segment encountered, segment flag:%d.\n", ph_addr.flags);
@@ -356,7 +356,7 @@ static void exec_bincode(process *p, char *path){
     
     p->trapframe->epc = ehdr.entry;
     do_close(fp); 
-    sprint("Application program entry point (virtual address): 0x%lx\n", p->trapframe->epc);
+    sprint("hartid = %lld: Application program entry point (virtual address): 0x%lx\n", read_tp(), p->trapframe->epc);
 }
 
 int do_exec(char *path_, char *arg_){
