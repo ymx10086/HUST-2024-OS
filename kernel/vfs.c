@@ -19,7 +19,7 @@ struct hash_table vinode_hash_table;
 // ! add for lab4_challenge1
 #include "process.h"
 #include "vmm.h"
-extern process* current;
+extern process* current[NCPU];
 
 
 //
@@ -520,9 +520,10 @@ struct dentry *lookup_final_dentry(const char *path, struct dentry **parent,
 
   char mask[MAX_PATH_LEN];
   memset(mask, '\0', sizeof(mask));
-  if (current != NULL){
+  uint64 hartid = read_tp();
+  if (current[hartid] != NULL){
     // sprint("Path : %s\n", current->pfiles->cwd->name);
-    memcpy(mask, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+    memcpy(mask, current[hartid]->pfiles->cwd->name, strlen(current[hartid]->pfiles->cwd->name));
 
     // ! add for lab4_challenge1
     if (path_copy[0] == '.') {
@@ -537,8 +538,8 @@ struct dentry *lookup_final_dentry(const char *path, struct dentry **parent,
           i--;
         }
         if (strlen(mask) == 0) mask[0] = '/', mask[1] = '\0';
-        memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
-        memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+        memset(current[hartid]->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+        memcpy(current[hartid]->pfiles->cwd->name, mask, strlen(mask));
       }
       int len = strlen(mask);
       if (strlen(mask) == 0) mask[1] = '\0';

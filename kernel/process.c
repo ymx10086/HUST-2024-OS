@@ -18,6 +18,9 @@
 #include "string.h"
 #include "vmm.h"
 
+#include "spike_interface/spike_utils.h"
+#include "spike_interface/atomic.h"
+
 //Two functions defined in kernel/usertrap.S
 extern char smode_trap_vector[];
 extern void return_to_user(trapframe *, uint64 satp);
@@ -30,7 +33,9 @@ extern char trap_sec_start[];
 process procs[NPROC];
 
 // current points to the currently running user-mode application.
-process *current = NULL;
+process *current[NCPU] = {NULL};
+
+spinlock_t current_lock;
 
 // points to the first free page in our simple heap. added @lab2_2
 // uint64 g_ufree_page = USER_FREE_ADDRESS_START;
@@ -38,9 +43,14 @@ process *current = NULL;
 //
 // switch to a user-mode process
 //
+// extern spinlock_t proc_lock;
 void switch_to(process *proc) {
+  uint64 hartid = read_tp();
   assert(proc);
-  current = proc;
+
+  spinlock_lock(&current_lock);
+  current[hartid] = proc;
+  spinlock_unlock(&current_lock);
 
   // write the smode_trap_vector (64-bit func. address) defined in kernel/strap_vector.S
   // to the stvec privilege register, such that trap handler pointed by smode_trap_vector
@@ -70,6 +80,9 @@ void switch_to(process *proc) {
 
   // return_to_user() is defined in kernel/strap_vector.S. switch to user mode with sret.
   // note, return_to_user takes two parameters @ and after lab2_1.
+
+  // spinlock_unlock(&proc_lock); 
+
   return_to_user(proc->trapframe, user_satp);
 }
 
@@ -83,14 +96,19 @@ void init_proc_pool() {
     procs[i].status = FREE;
     procs[i].pid = i;
   }
+  
 }
+
+spinlock_t alloc_process_lock;
 
 //
 // allocate an empty process, init its vm space. returns the pointer to
 // process strcuture. added @lab3_1
 //
 process *alloc_process(){
+  spinlock_lock(&alloc_process_lock);
 	// locate the first usable process structure
+  uint64 hartid = read_tp();
 	int i;
 
 	for (i = 0; i < NPROC; i++)
@@ -113,6 +131,7 @@ process *alloc_process(){
 	procs[i].kstack = (uint64)alloc_page() + PGSIZE; // user kernel stack top
 	uint64 user_stack = (uint64)alloc_page();		 // phisical address of user stack bottom
 	procs[i].trapframe->regs.sp = USER_STACK_TOP;	 // virtual address of user stack top
+  procs[i].trapframe->regs.tp = hartid; // 十分重要
 
 	// allocates a page to record memory regions (segments)
 	procs[i].mapped_info = (mapped_region *)alloc_page();
@@ -121,6 +140,7 @@ process *alloc_process(){
 	// map user stack in userspace
 	user_vm_map((pagetable_t)procs[i].pagetable, USER_STACK_TOP - PGSIZE, PGSIZE,
 				user_stack, prot_to_type(PROT_WRITE | PROT_READ, 1));
+  
 	procs[i].mapped_info[STACK_SEGMENT].va = USER_STACK_TOP - PGSIZE;
 	procs[i].mapped_info[STACK_SEGMENT].npages = 1;
 	procs[i].mapped_info[STACK_SEGMENT].seg_type = STACK_SEGMENT;
@@ -169,6 +189,8 @@ process *alloc_process(){
 	procs[i].parent = NULL;
 
 	// return after initialization.
+
+  spinlock_unlock(&alloc_process_lock);
 	return &procs[i];
 }
 
@@ -292,6 +314,7 @@ int do_fork(process *parent) {
       // ! add for lab3_challenge1
       case DATA_SEGMENT:
 
+        
         for (int j = 0; j < parent->mapped_info[i].npages; j++) {
           uint64 pa_of_mapped_va = lookup_pa(parent->pagetable, parent->mapped_info[i].va + j * PGSIZE);
           // need to register new page
@@ -311,6 +334,7 @@ int do_fork(process *parent) {
     }
   }
 
+          
   child->pfiles->nfiles = parent->pfiles->nfiles;
   child->pfiles->cwd = parent->pfiles->cwd;
   for (int i = 0; i < MAX_FILES; i++) {
@@ -322,7 +346,10 @@ int do_fork(process *parent) {
   child->status = READY;
   child->trapframe->regs.a0 = 0;
   child->parent = parent;
+  child->trapframe->regs.tp = read_tp();
   insert_to_ready_queue(child);
+
+
 
   return child->pid;
 }
@@ -450,18 +477,19 @@ int v_sem(int sem) {
 
 //p
 int p_sem(int sem) {
+  uint64 hartid = read_tp();
   if (sem < 0 || sem >= NPROC) return -1;
   sems[sem].val--;
   if (sems[sem].val < 0) {
     if (sems[sem].wl_head != NULL) {
-      sems[sem].wl_tail->queue_next = current->queue_next;
-      // sprint("RRR : %d", (current->queue_next != NULL));
-      sems[sem].wl_tail = current;
+      sems[sem].wl_tail->queue_next = current[hartid]->queue_next;
+      // sprint("RRR : %d", (current[hartid]->queue_next != NULL));
+      sems[sem].wl_tail = current[hartid];
     } else {
-      sems[sem].wl_head = sems[sem].wl_tail = current;
-      current->queue_next = NULL;
+      sems[sem].wl_head = sems[sem].wl_tail = current[hartid];
+      current[hartid]->queue_next = NULL;
     }
-    current->status = BLOCKED;
+    current[hartid]->status = BLOCKED;
     schedule();
   }
   return 0;
@@ -471,25 +499,26 @@ int p_sem(int sem) {
 //// insert for free chain
 //
 static void insert_into_free(uint64 mem_va){
-	if (current->user_heap.mem_free == -1){
-		mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
+  uint64 hartid = read_tp();
+	if (current[hartid]->user_heap.mem_free == -1){
+		mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)mem_va));
 		mem_pa->next = -1;
-		current->user_heap.mem_free = mem_va;
+		current[hartid]->user_heap.mem_free = mem_va;
 		return;
 	}
-	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
-	uint64 current_va = current->user_heap.mem_free;
-	mem_block *current_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)current->user_heap.mem_free));
+	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)mem_va));
+	uint64 current_va = current[hartid]->user_heap.mem_free;
+	mem_block *current_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)current[hartid]->user_heap.mem_free));
 	// judge if insert into the head of the chain
 	if (current_pa->cap > mem_pa->cap){
-		mem_pa->next = current->user_heap.mem_free;
-		current->user_heap.mem_free = mem_va;
+		mem_pa->next = current[hartid]->user_heap.mem_free;
+		current[hartid]->user_heap.mem_free = mem_va;
 		return;
 	}
   // insert into the correct location
 	while (current_pa->next != -1){
 		uint64 next_va = current_pa->next;
-		mem_block *next_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)next_va));
+		mem_block *next_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)next_va));
 		if (next_pa->cap > mem_pa->cap) break;
 		current_va = next_va;
 		current_pa = next_pa;
@@ -503,22 +532,23 @@ static void insert_into_free(uint64 mem_va){
 //// head insert for used chain
 // 
 static void insert_into_used(uint64 mem_va){
-	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va));
-	mem_pa->next = current->user_heap.mem_used;
-	current->user_heap.mem_used = mem_va;
+  uint64 hartid = read_tp();
+	mem_block *mem_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)mem_va));
+	mem_pa->next = current[hartid]->user_heap.mem_used;
+	current[hartid]->user_heap.mem_used = mem_va;
 }
 
-static void remove_ptr(uint64 *head, uint64 mem_va)
-{
+static void remove_ptr(uint64 *head, uint64 mem_va){
+  uint64 hartid = read_tp();
 	if (*head == mem_va){
-		*head = ((mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va)))->next;
+		*head = ((mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)mem_va)))->next;
 		return;
 	}
-	mem_block *p = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)(*head)));
+	mem_block *p = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)(*head)));
 	while (p->next != mem_va){
-		p = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)p->next));
+		p = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)p->next));
 	}
-	p->next = ((mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)mem_va)))->next;
+	p->next = ((mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)mem_va)))->next;
 	return;
 }
 
@@ -530,22 +560,23 @@ static uint64 get_next_mem_addr(uint64 addr){
 
 // free
 static void alloc_from_free(uint64 va, uint64 n){
+  uint64 hartid = read_tp();
   uint64 page_used = va + sizeof(mem_block) + n;
 	uint64 next_mem_addr = get_next_mem_addr(page_used);
-	mem_block *pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)va));
+	mem_block *pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)va));
 	if (va + pa->cap > next_mem_addr){
     // the left memory can be used ever
 		uint64 free_mem = next_mem_addr;
-		mem_block *free_mem_pa = (mem_block *)user_va_to_pa((pagetable_t)current->pagetable, (void *)free_mem);
+		mem_block *free_mem_pa = (mem_block *)user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)free_mem);
 		free_mem_pa->cap = va + pa->cap - next_mem_addr;
 		pa->cap = next_mem_addr - va;
-		remove_ptr(&(current->user_heap.mem_free), va);
+		remove_ptr(&(current[hartid]->user_heap.mem_free), va);
     // update the chain of used and free
 		insert_into_used(va);
 		insert_into_free(free_mem);
 	}
 	else{
-		remove_ptr(&(current->user_heap.mem_free), va);
+		remove_ptr(&(current[hartid]->user_heap.mem_free), va);
     // update the chain of used
 		insert_into_used(va);
 	}
@@ -553,31 +584,32 @@ static void alloc_from_free(uint64 va, uint64 n){
 
 // free + new_page
 static void alloc_from_free_and_g_ufree_page(uint64 va, uint64 n) {
-	remove_ptr(&(current->user_heap.mem_free), va); 
-	mem_block* pa = (mem_block*)(user_va_to_pa((pagetable_t)current->pagetable, (void*)va));
+  uint64 hartid = read_tp();
+	remove_ptr(&(current[hartid]->user_heap.mem_free), va); 
+	mem_block* pa = (mem_block*)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void*)va));
 	uint64 unallocated = n - (pa->cap - sizeof(mem_block)); // 还有remain个字节需要分配
 	uint64 new_pages = unallocated / PGSIZE + (unallocated % PGSIZE != 0); // 需要new_pages个页面
 	
   // allovation
   uint64 current_pages = new_pages;
   // uint64 current_va = g_ufree_page;
-  uint64 current_va = current->user_heap.g_ufree_page;
+  uint64 current_va = current[hartid]->user_heap.g_ufree_page;
 	while(current_pages--){
 		uint64 new_pa = (uint64)alloc_page();
 		memset((void *)new_pa, 0, PGSIZE);
-		user_vm_map((pagetable_t)current->pagetable, current_va, PGSIZE, new_pa,
+		user_vm_map((pagetable_t)current[hartid]->pagetable, current_va, PGSIZE, new_pa,
 					prot_to_type(PROT_WRITE | PROT_READ, 1));
-    current->user_heap.g_ufree_page += PGSIZE;
-    current_va = current->user_heap.g_ufree_page;
+    current[hartid]->user_heap.g_ufree_page += PGSIZE;
+    current_va = current[hartid]->user_heap.g_ufree_page;
 	}
 
 	uint64 last_page_use = unallocated % PGSIZE;
 	if (last_page_use != 0){
-		uint64 next_mem_addr = get_next_mem_addr(current->user_heap.g_ufree_page - PGSIZE + last_page_use);
+		uint64 next_mem_addr = get_next_mem_addr(current[hartid]->user_heap.g_ufree_page - PGSIZE + last_page_use);
     // sprint("NEXT : %d", next_mem_addr);
-		if (current->user_heap.g_ufree_page - next_mem_addr > sizeof(mem_block)) {
+		if (current[hartid]->user_heap.g_ufree_page - next_mem_addr > sizeof(mem_block)) {
 		
-			mem_block* free_pa = (mem_block*)(user_va_to_pa((pagetable_t)current->pagetable, (void*)next_mem_addr));
+			mem_block* free_pa = (mem_block*)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void*)next_mem_addr));
 			free_pa->next = -1;
 			free_pa->cap = PGSIZE - next_mem_addr % PGSIZE;
 			insert_into_free(next_mem_addr);
@@ -593,21 +625,23 @@ static void alloc_from_free_and_g_ufree_page(uint64 va, uint64 n) {
 // new_page
 static void *alloc_from_g_ufree_page(uint64 n){
 
+  uint64 hartid = read_tp();
+
 	// calu counts of pages
 	uint64 pages = (n + sizeof(mem_block) + PGSIZE - 1) / PGSIZE;
-	uint64 first_page_va = current->user_heap.g_ufree_page;
-	uint64 last_page_va = current->user_heap.g_ufree_page + (pages - 1) * PGSIZE;  
+	uint64 first_page_va = current[hartid]->user_heap.g_ufree_page;
+	uint64 last_page_va = current[hartid]->user_heap.g_ufree_page + (pages - 1) * PGSIZE;  
 
 	// allovation
   uint64 current_pages = pages;
-  uint64 current_va = current->user_heap.g_ufree_page;
+  uint64 current_va = current[hartid]->user_heap.g_ufree_page;
 	while(current_pages--){
 		uint64 pa = (uint64)alloc_page();
 		memset((void *)pa, 0, PGSIZE);
-		user_vm_map((pagetable_t)current->pagetable, current_va, PGSIZE, pa,
+		user_vm_map((pagetable_t)current[hartid]->pagetable, current_va, PGSIZE, pa,
 					prot_to_type(PROT_WRITE | PROT_READ, 1));
-    current->user_heap.g_ufree_page += PGSIZE;
-    current_va = current->user_heap.g_ufree_page;
+    current[hartid]->user_heap.g_ufree_page += PGSIZE;
+    current_va = current[hartid]->user_heap.g_ufree_page;
 	}
 
 	// control the memory
@@ -617,17 +651,17 @@ static void *alloc_from_g_ufree_page(uint64 n){
 	if (next_mem_addr + sizeof(mem_block) >= last_page_va + PGSIZE){
     // the left memory cannot be used
   
-		mem_block *use_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)first_page_va));
+		mem_block *use_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)first_page_va));
 		
     use_pa->cap = pages * PGSIZE;
 		insert_into_used(first_page_va);
 	}
 	else{
      
-		mem_block *use_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)first_page_va));
+		mem_block *use_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)first_page_va));
 		use_pa->cap = next_mem_addr - first_page_va;
 		insert_into_used(first_page_va);
-		mem_block *free_pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)next_mem_addr));
+		mem_block *free_pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)next_mem_addr));
 		free_pa->cap = last_page_va + PGSIZE - next_mem_addr;
 		insert_into_free(next_mem_addr);
 	}   
@@ -636,14 +670,16 @@ static void *alloc_from_g_ufree_page(uint64 n){
 }
 
 void *better_alloc(uint64 n){ 
+
+  uint64 hartid = read_tp();
   
-	if (current->user_heap.mem_free == -1) return alloc_from_g_ufree_page(n); 
-	uint64 va = current->user_heap.mem_free;
+	if (current[hartid]->user_heap.mem_free == -1) return alloc_from_g_ufree_page(n); 
+	uint64 va = current[hartid]->user_heap.mem_free;
 	uint64 max_va = va; // record the max va
   uint64 va_ptr;
 	while (va != -1){
 		max_va = va > max_va ? va : max_va;
-		mem_block *pa = (mem_block *)(user_va_to_pa((pagetable_t)current->pagetable, (void *)va));
+		mem_block *pa = (mem_block *)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)va));
 		if (pa->cap >= n + sizeof(mem_block)){ 
 			va_ptr = va + sizeof(mem_block);
 			alloc_from_free(va, n);
@@ -652,8 +688,8 @@ void *better_alloc(uint64 n){
 		va = pa->next;
 	}
 
-	mem_block* max_pa = (mem_block*)user_va_to_pa((pagetable_t)current->pagetable, (void *)max_va);
-	if (max_va + max_pa->cap == current->user_heap.g_ufree_page){
+	mem_block* max_pa = (mem_block*)user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void *)max_va);
+	if (max_va + max_pa->cap == current[hartid]->user_heap.g_ufree_page){
 
 		va_ptr = max_va + sizeof(mem_block); 
 		alloc_from_free_and_g_ufree_page(max_va, n);
@@ -664,8 +700,10 @@ void *better_alloc(uint64 n){
 
 void better_free(uint64 va){
 
+  uint64 hartid = read_tp();
+
 	uint64 p = va - sizeof(mem_block); 
-	remove_ptr(&(current->user_heap.mem_used), p);
+	remove_ptr(&(current[hartid]->user_heap.mem_used), p);
 	insert_into_free(p);
 	return;
 }

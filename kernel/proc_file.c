@@ -68,11 +68,12 @@ void reclaim_proc_file_management(proc_file_management *pfiles) {
 // return: the pointer to the opened file structure.
 //
 struct file *get_opened_file(int fd) {
+  uint64 hartid = read_tp();
   struct file *pfile = NULL;
 
   // browse opened file list to locate the fd
   for (int i = 0; i < MAX_FILES; ++i) {
-    pfile = &(current->pfiles->opened_files[i]);  // file entry
+    pfile = &(current[hartid]->pfiles->opened_files[i]);  // file entry
     if (i == fd) break;
   }
   if (pfile == NULL) panic("do_read: invalid fd!\n");
@@ -84,23 +85,24 @@ struct file *get_opened_file(int fd) {
 // return: -1 on failure; non-zero file-descriptor on success.
 //
 int do_open(char *pathname, int flags) {
+  uint64 hartid = read_tp();
   struct file *opened_file = NULL;
   if ((opened_file = vfs_open(pathname, flags)) == NULL) return -1;
 
   int fd = 0;
-  if (current->pfiles->nfiles >= MAX_FILES) {
+  if (current[hartid]->pfiles->nfiles >= MAX_FILES) {
     panic("do_open: no file entry for current process!\n");
   }
   struct file *pfile;
   for (fd = 0; fd < MAX_FILES; ++fd) {
-    pfile = &(current->pfiles->opened_files[fd]);
+    pfile = &(current[hartid]->pfiles->opened_files[fd]);
     if (pfile->status == FD_NONE) break;
   }
 
   // initialize this file structure
   memcpy(pfile, opened_file, sizeof(struct file));
 
-  ++current->pfiles->nfiles;
+  ++current[hartid]->pfiles->nfiles;
   return fd;
 }
 
@@ -142,13 +144,14 @@ int do_lseek(int fd, int offset, int whence) {
 }
 
 int do_ccwd(char *pa){
+  uint64 hartid = read_tp();
   char* path_copy = (char*)pa;
   char mask[MAX_PATH_LEN];
   memset(mask, '\0', MAX_PATH_LEN);
   char origin[MAX_PATH_LEN];
   memset(origin, '\0', MAX_PATH_LEN);
   // sprint("current path : %s\n", current->pfiles->cwd->name);
-  memcpy(mask, current->pfiles->cwd->name, strlen(current->pfiles->cwd->name));
+  memcpy(mask, current[hartid]->pfiles->cwd->name, strlen(current[hartid]->pfiles->cwd->name));
 
   if (path_copy[0] == '.') {
     if (path_copy[1] == '.') {
@@ -162,8 +165,8 @@ int do_ccwd(char *pa){
         i--;
       }
       if (strlen(mask) == 0) mask[0] = '/', mask[1] = '\0';
-      memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
-      memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+      memset(current[hartid]->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+      memcpy(current[hartid]->pfiles->cwd->name, mask, strlen(mask));
     }
     else{
       int len = strlen(mask);
@@ -190,8 +193,8 @@ int do_ccwd(char *pa){
         return -1;
       }
 
-      memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
-      memcpy(current->pfiles->cwd->name, mask, strlen(mask));
+      memset(current[hartid]->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+      memcpy(current[hartid]->pfiles->cwd->name, mask, strlen(mask));
     }
   }
   else if (path_copy[0] == '/') {
@@ -207,8 +210,8 @@ int do_ccwd(char *pa){
     }
 
      // sprint("copy path : %s\n", path_copy);
-    memset(current->pfiles->cwd->name, '\0', MAX_PATH_LEN);
-    memcpy(current->pfiles->cwd->name, path_copy, strlen(path_copy));
+    memset(current[hartid]->pfiles->cwd->name, '\0', MAX_PATH_LEN);
+    memcpy(current[hartid]->pfiles->cwd->name, path_copy, strlen(path_copy));
     // sprint("current path : %s\n", current->pfiles->cwd->name);
   }
 
@@ -244,13 +247,14 @@ int do_close(int fd) {
 // return: the fd of the directory file
 //
 int do_opendir(char *pathname) {
+  uint64 hartid = read_tp();
   struct file *opened_file = NULL;
   if ((opened_file = vfs_opendir(pathname)) == NULL) return -1;
 
   int fd = 0;
   struct file *pfile;
   for (fd = 0; fd < MAX_FILES; ++fd) {
-    pfile = &(current->pfiles->opened_files[fd]);
+    pfile = &(current[hartid]->pfiles->opened_files[fd]);
     if (pfile->status == FD_NONE) break;
   }
   if (pfile->status != FD_NONE)  // no free entry
@@ -259,7 +263,7 @@ int do_opendir(char *pathname) {
   // initialize this file structure
   memcpy(pfile, opened_file, sizeof(struct file));
 
-  ++current->pfiles->nfiles;
+  ++current[hartid]->pfiles->nfiles;
   return fd;
 }
 
@@ -356,6 +360,8 @@ static void exec_bincode(process *p, char *path){
 }
 
 int do_exec(char *path_, char *arg_){
+
+  uint64 hartid = read_tp();
    
 	int PathLen = strlen(path_);
 	char path[PathLen + 1];
@@ -364,22 +370,22 @@ int do_exec(char *path_, char *arg_){
 	char arg[ArgLen + 1];
 	strcpy(arg, arg_);
   
-	exec_clean(current);
+	exec_clean(current[hartid]);
 	
-	uint64 argv_va = current->trapframe->regs.sp - ArgLen - 1;
+	uint64 argv_va = current[hartid]->trapframe->regs.sp - ArgLen - 1;
 	argv_va = argv_va - argv_va % 8; 
-	uint64 argv_pa = (uint64)user_va_to_pa(current->pagetable, (void *)argv_va);
+	uint64 argv_pa = (uint64)user_va_to_pa(current[hartid]->pagetable, (void *)argv_va);
 	strcpy((char *)argv_pa, arg);
 
 	uint64 argvs_va = argv_va - 8; 
-	uint64 argvs_pa = (uint64)user_va_to_pa(current->pagetable, (void *)argvs_va);
+	uint64 argvs_pa = (uint64)user_va_to_pa(current[hartid]->pagetable, (void *)argvs_va);
 	*(uint64 *)argvs_pa = argv_va; 
 
-	current->trapframe->regs.a0 = 1; 
-	current->trapframe->regs.a1 = argvs_va; 
-	current->trapframe->regs.sp = argvs_va - argvs_va % 16; 
+	current[hartid]->trapframe->regs.a0 = 1; 
+	current[hartid]->trapframe->regs.a1 = argvs_va; 
+	current[hartid]->trapframe->regs.sp = argvs_va - argvs_va % 16; 
 
-	load_bincode_from_host_elf(current, path); 
+	load_bincode_from_host_elf(current[hartid], path); 
 
 	return -1;
 }

@@ -16,6 +16,9 @@
 #include "rfs.h"
 #include "ramdev.h"
 
+#include "sync_utils.h"
+#include "spike_interface/atomic.h"
+
 //
 // trap_sec_start points to the beginning of S-mode trap segment (i.e., the entry point of
 // S-mode trap vector). added @lab2_1
@@ -63,7 +66,9 @@ static size_t parse_args(arg_buf *arg_bug_msg) {
 // load the elf, and construct a "process" (with only a trapframe).
 // load_bincode_from_host_elf is defined in elf.c
 //
+static int tag = 0;
 process* load_user_program() {
+  uint64 hartid = read_tp();
   process* proc;
 
   proc = alloc_process();
@@ -75,42 +80,66 @@ process* load_user_program() {
   size_t argc = parse_args(&arg_bug_msg);
   if (!argc) panic("You need to specify the application program!\n");
 
-  load_bincode_from_host_elf(proc, arg_bug_msg.argv[0]);
+  load_bincode_from_host_elf(proc, arg_bug_msg.argv[hartid]);
+
+
   return proc;
 }
+
+static int start_init = 0;
+extern spinlock_t root_lock; // 外部变量
+static int CoreBootCount = 0;
+
+spinlock_t proc_lock; 
 
 //
 // s_start: S-mode entry point of riscv-pke OS kernel.
 //
 int s_start(void) {
+  uint64 hartid = read_tp();
   sprint("Enter supervisor mode...\n");
   // in the beginning, we use Bare mode (direct) memory mapping as in lab1.
   // but now, we are going to switch to the paging mode @lab2_1.
   // note, the code still works in Bare mode when calling pmm_init() and kern_vm_init().
   write_csr(satp, 0);
 
-  // init phisical memory manager
-  pmm_init();
+  if(start_init == 0){
+    start_init = 1;
+    // init phisical memory manager
+    pmm_init();
 
-  // build the kernel page table
-  kern_vm_init();
+    // build the kernel page table
+    kern_vm_init();
 
-  // now, switch to paging mode by turning on paging (SV39)
-  enable_paging();
-  // the code now formally works in paging mode, meaning the page table is now in use.
-  sprint("kernel page table is on \n");
+    // now, switch to paging mode by turning on paging (SV39)
+    enable_paging();
+    // the code now formally works in paging mode, meaning the page table is now in use.
+    sprint("kernel page table is on \n");
 
-  // added @lab3_1
-  init_proc_pool();
+    // added @lab3_1
+    init_proc_pool();
 
-  // init file system, added @lab4_1
-  fs_init();
+    // init file system, added @lab4_1
+    fs_init();    
+  }
+
 
   sprint("Switch to user mode...\n");
   // the application code (elf) is first loaded into memory, and then put into execution
   // added @lab3_1
-  insert_to_ready_queue( load_user_program() );
-  schedule();
+
+  // insert_to_ready_queue( load_user_program() );
+  // schedule();
+  process* app = load_user_program();
+
+  if (app != NULL) {
+      insert_to_ready_queue(app);
+  }
+
+  spinlock_unlock(&root_lock); // release
+	// spinlock_unlock(&CoreBootLock);
+	
+	schedule();
 
   // we should never reach here.
   return 0;

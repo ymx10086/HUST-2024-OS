@@ -150,7 +150,7 @@ int free_process( process* proc );
 int do_fork(process* parent);
 
 // current running process
-extern process* current;
+extern process* current[NCPU];
 
 // release three level pagetable
 void exec_clean(process* p);

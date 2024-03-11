@@ -23,13 +23,14 @@ struct stat tmp_stat;
 // line_show prints the code line the entry points to.
 //
 void line_show(addr_line *line) {
+  uint64 hartid = read_tp();
   
-  int len = strlen(current->dir[current->file[line->file].dir]);
+  int len = strlen(current[hartid]->dir[current[hartid]->file[line->file].dir]);
   // get construct path
-  strcpy(error_path, current->dir[current->file[line->file].dir]);
+  strcpy(error_path, current[hartid]->dir[current[hartid]->file[line->file].dir]);
   // sprint("Error : %s", error_path);
   error_path[len] = '/';
-  strcpy(error_path + len + 1, current->file[line->file].file);
+  strcpy(error_path + len + 1, current[hartid]->file[line->file].file);
 
   // read and print code line
   spike_file_t *f = spike_file_open(error_path, O_RDONLY, 0);
@@ -53,12 +54,13 @@ void line_show(addr_line *line) {
 // Find the "process->line" array entry
 //
 void error_displayer() {
+  uint64 hartid = read_tp();
   uint64 mepc = read_csr(mepc);
   // sprint("%p", mepc);
-  for (int i = 0; i < current->line_ind; i++) {
+  for (int i = 0; i < current[hartid]->line_ind; i++) {
     // find the exception line table entry
-    if (mepc < current->line[i].addr) {
-      line_show(current->line + i - 1);
+    if (mepc < current[hartid]->line[i].addr) {
+      line_show(current[hartid]->line + i - 1);
       break;
     }
   }
@@ -66,7 +68,7 @@ void error_displayer() {
 
 // added @lab1_3
 static void handle_timer() {
-  int cpuid = 0;
+  int cpuid = read_csr(mhartid);
   // setup the timer fired at next time (TIMER_INTERVAL from now)
   *(uint64*)CLINT_MTIMECMP(cpuid) = *(uint64*)CLINT_MTIMECMP(cpuid) + TIMER_INTERVAL;
 
