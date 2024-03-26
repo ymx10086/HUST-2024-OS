@@ -274,7 +274,7 @@ elf_status elf_load(elf_ctx *ctx) {
           make_addr_line(ctx, (char *) load_va, tmp_seg.size);
       }
   }
-//   sprint("Total program segment number is %d\n", ((process*)(((elf_info*)(ctx->info))->p))->total_mapped_region);
+  sprint("Total program segment number is %d\n", ((process*)(((elf_info*)(ctx->info))->p))->total_mapped_region);
 
   return EL_OK;
 }

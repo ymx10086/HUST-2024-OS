@@ -6,13 +6,17 @@
 #include "spike_interface/spike_utils.h"
 
 #include "sync_utils.h"
+#include "spike_interface/atomic.h"
 
 process* ready_queue_head[NCPU] = {NULL};
 
 //
 // insert a process, proc, into the END of ready queue.
 //
+spinlock_t insert_lock;
+
 void insert_to_ready_queue( process* proc ) {
+  spinlock_lock(&insert_lock);
   uint64 hartid = read_tp();
   sprint("hartid = %lld: going to insert process %d to ready queue.\n", hartid, proc->pid);
   // if the queue is empty in the beginning
@@ -20,6 +24,7 @@ void insert_to_ready_queue( process* proc ) {
     proc->status = READY;
     proc->queue_next = NULL;
     ready_queue_head[hartid] = proc;
+    spinlock_unlock(&insert_lock);
     return;
   }
 
@@ -34,6 +39,8 @@ void insert_to_ready_queue( process* proc ) {
   p->queue_next = proc;
   proc->status = READY;
   proc->queue_next = NULL;
+
+  spinlock_unlock(&insert_lock);
 
   return;
 }
@@ -64,7 +71,7 @@ void schedule() {
           sprint( "hartid = %lld: ready queue empty, but process %d is not in free/zombie state:%d, maybe other cpu still have process should be done\n", 
             hartid, i, procs[i].status );
         }
-
+      sync_barrier(&shutdown_mutex, NCPU);
       if( should_shutdown ){
           // ! add for lab1_challenge3
           sync_barrier(&shutdown_mutex, NCPU);
@@ -79,6 +86,7 @@ void schedule() {
       }
     }
     else{
+      sprint("sdfaasdfasdfasdfasdfasdfasdfasdfasdfsff");
       schedule();
     }
   }

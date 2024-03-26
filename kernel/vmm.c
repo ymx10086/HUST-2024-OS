@@ -10,6 +10,7 @@
 #include "util/string.h"
 #include "spike_interface/spike_utils.h"
 #include "util/functions.h"
+#include "spike_interface/atomic.h"
 
 /* --- utility functions for virtual address mapping --- */
 //
@@ -43,11 +44,16 @@ uint64 prot_to_type(int prot, int user) {
   return perm;
 }
 
+spinlock_t page_walk_lock;
+
 //
 // traverse the page table (starting from page_dir) to find the corresponding pte of va.
 // returns: PTE (page table entry) pointing to va.
 //
 pte_t *page_walk(pagetable_t page_dir, uint64 va, int alloc) {
+
+  spinlock_lock(&page_walk_lock);
+  
   if (va >= MAXVA) panic("page_walk");
 
   // starting from the page directory
@@ -78,6 +84,8 @@ pte_t *page_walk(pagetable_t page_dir, uint64 va, int alloc) {
     }
   }
 
+  spinlock_unlock(&page_walk_lock);
+
   // return a PTE which contains phisical address of a page
   return pt + PX(0, va);
 }
@@ -86,6 +94,7 @@ pte_t *page_walk(pagetable_t page_dir, uint64 va, int alloc) {
 // look up a virtual page address, return the physical page address or 0 if not mapped.
 //
 uint64 lookup_pa(pagetable_t pagetable, uint64 va) {
+
   pte_t *pte;
   uint64 pa;
 

@@ -163,6 +163,8 @@ process *alloc_process(){
 	sprint("hartid = %lld: in alloc_proc. user frame 0x%lx, user stack 0x%lx, user kstack 0x%lx \n",
 		   hartid, procs[i].trapframe, procs[i].trapframe->regs.sp, procs[i].kstack);
 
+  
+
 	// // initialize the process's heap manager
 	// procs[i].user_heap.heap_top = USER_FREE_ADDRESS_START;
 	// procs[i].user_heap.heap_bottom = USER_FREE_ADDRESS_START;
@@ -184,11 +186,13 @@ process *alloc_process(){
 	procs[i].pfiles = init_proc_file_management();
 	sprint("hartid = %lld: in alloc_proc. build proc_file_management successfully.\n", hartid);
 
-  // sprint("raii : %s\n", procs[i].pfiles->cwd->name);
-
 	procs[i].parent = NULL;
 
+  sprint("hartid = %lld: process %d has been alloc.\n", hartid, i);
+
 	// return after initialization.
+
+  procs[i].status = READY;
 
   spinlock_unlock(&alloc_process_lock);
 	return &procs[i];
