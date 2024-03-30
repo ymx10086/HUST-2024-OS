@@ -88,6 +88,18 @@ USER_M_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_M_CPPS)))
 
 USER_M_TARGET 	:= $(HOSTFS_ROOT)/bin/app_mkdir
 
+USER_SEQ_CPPS 		:= user/app_sequence.c user/user_lib.c
+
+USER_SEQ_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_SEQ_CPPS)))
+
+USER_SEQ_TARGET 	:= $(HOSTFS_ROOT)/bin/app_sequence
+
+USER_HIS_CPPS 		:= user/app_history.c user/user_lib.c
+
+USER_HIS_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_HIS_CPPS)))
+
+USER_HIS_TARGET 	:= $(HOSTFS_ROOT)/bin/app_history
+
 USER_ERR_CPPS 		:= user/app_errorline.c user/user_lib.c
 
 USER_ERR_OBJS  		:= $(addprefix $(OBJ_DIR)/, $(patsubst %.c,%.o,$(USER_ERR_CPPS)))
@@ -157,6 +169,8 @@ $(OBJ_DIR):
 	@-mkdir -p $(dir $(USER_OBJ1))
 	@-mkdir -p $(dir $(USER_E_OBJS))
 	@-mkdir -p $(dir $(USER_M_OBJS))
+	@-mkdir -p $(dir $(USER_SEQ_OBJS))
+	@-mkdir -p $(dir $(USER_HIS_OBJS))
 	@-mkdir -p $(dir $(USER_ERR_OBJS))
 	@-mkdir -p $(dir $(USER_SIN_OBJS))
 	@-mkdir -p $(dir $(USER_SEM_OBJS))
@@ -207,6 +221,18 @@ $(USER_M_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_M_OBJS)
 	@echo "linking" $@	...	
 	-@mkdir -p $(HOSTFS_ROOT)/bin
 	@$(COMPILE) --entry=main $(USER_M_OBJS) $(UTIL_LIB) -o $@
+	@echo "User app has been built into" \"$@\"
+
+$(USER_SEQ_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_SEQ_OBJS)
+	@echo "linking" $@	...	
+	-@mkdir -p $(HOSTFS_ROOT)/bin
+	@$(COMPILE) --entry=main $(USER_SEQ_OBJS) $(UTIL_LIB) -o $@
+	@echo "User app has been built into" \"$@\"
+
+$(USER_HIS_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_HIS_OBJS)
+	@echo "linking" $@	...	
+	-@mkdir -p $(HOSTFS_ROOT)/bin
+	@$(COMPILE) --entry=main $(USER_HIS_OBJS) $(UTIL_LIB) -o $@
 	@echo "User app has been built into" \"$@\"
 
 $(USER_ERR_TARGET): $(OBJ_DIR) $(UTIL_LIB) $(USER_ERR_OBJS)
@@ -278,12 +304,12 @@ $(USER_TARGET1): $(OBJ_DIR) $(UTIL_LIB) $(USER_OBJ1)
 
 .DEFAULT_GOAL := $(all)
 
-all: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_ERR_TARGET) $(USER_SIN_TARGET) $(USER_SEM_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET) $(USER_TARGET0) $(USER_TARGET1)
+all: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_SEQ_TARGET) $(USER_HIS_TARGET) $(USER_ERR_TARGET) $(USER_SIN_TARGET) $(USER_SEM_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET) $(USER_TARGET0) $(USER_TARGET1)
 .PHONY:all
 
-run: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_ERR_TARGET) $(USER_SIN_TARGET) $(USER_SEM_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET) $(USER_TARGET0) $(USER_TARGET1)
+run: $(KERNEL_TARGET) $(USER_TARGET) $(USER_E_TARGET) $(USER_M_TARGET) $(USER_SEQ_TARGET) $(USER_HIS_TARGET) $(USER_ERR_TARGET) $(USER_SIN_TARGET) $(USER_SEM_TARGET) $(USER_COW_TARGET) $(USER_CD_TARGET) $(USER_PW_TARGET) $(USER_T_TARGET) $(USER_C_TARGET) $(USER_O_TARGET) $(USER_TARGET0) $(USER_TARGET1)
 	@echo "********************HUST PKE********************"
-	spike $(KERNEL_TARGET) /bin/app_shell
+	spike -p2 $(KERNEL_TARGET) /bin/app_shell /bin/app_alloc0
 
 # need openocd!
 gdb:$(KERNEL_TARGET) $(USER_TARGET)

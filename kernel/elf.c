@@ -11,6 +11,9 @@
 #include "vfs.h"
 #include "spike_interface/spike_utils.h"
 
+static char name_row[NPROC][256];
+static int ag;
+
 typedef struct elf_info_t {
   struct file *f;
   process *p;
@@ -286,6 +289,10 @@ void load_bincode_from_host_elf(process *p, char *filename) {
   uint64 hartid = read_tp();
   sprint("hartid = %lld: Application: %s\n", hartid, filename);
 
+  memcpy(name_row[ag++], filename, strlen(filename) + 1);
+
+  sprint("%s", name_row[0]);
+
   //elf loading. elf_ctx is defined in kernel/elf.h, used to track the loading process.
   elf_ctx elfloader;
   // elf_info is defined above, used to tie the elf file and its corresponding process.
@@ -311,4 +318,12 @@ void load_bincode_from_host_elf(process *p, char *filename) {
   vfs_close( info.f );
 
   sprint("hartid = %lld: Application program entry point (virtual address): 0x%lx\n", hartid, p->trapframe->epc);
+}
+
+int do_history(){
+  if(!ag) sprint("No history command! \n");
+  for(int i = 0; i < ag; i++){
+    sprint("%s\n", name_row[i]);
+  }
+  return ag;
 }

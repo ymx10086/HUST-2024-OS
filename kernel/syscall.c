@@ -14,6 +14,7 @@
 #include "vmm.h"
 #include "sched.h"
 #include "proc_file.h"
+#include "elf.h"
 
 #include "spike_interface/spike_utils.h"
 
@@ -135,6 +136,15 @@ ssize_t sys_user_fork() {
   uint64 hartid = read_tp();
   sprint("hartid = %lld: User call fork.\n", hartid);
   return do_fork( current[hartid] );
+}
+
+//
+// kerenl entry point of history
+//
+ssize_t sys_user_history() {
+  uint64 hartid = read_tp();
+  sprint("hartid = %lld: User call history.\n", hartid);
+  return do_history();
 }
 
 //
@@ -434,6 +444,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_better_malloc(a1); 
     case SYS_user_better_free_page:
       return sys_user_better_free(a1); 
+    case SYS_user_history:
+      return sys_user_history();
     default:
       panic("Unknown syscall %ld \n", a0);
   }

@@ -47,6 +47,8 @@
 #define SYS_user_better_allocate_page (SYS_user_base + 15)
 #define SYS_user_better_free_page (SYS_user_base + 16)
 
+#define SYS_user_history (SYS_user_base + 30)
+
 long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7);
 
 #endif

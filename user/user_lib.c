@@ -66,6 +66,8 @@ int exit(int code) {
   return do_user_call(SYS_user_exit, code, 0, 0, 0, 0, 0, 0); 
 }
 
+
+
 //
 // lib call to naive_malloc
 //
@@ -84,6 +86,12 @@ void naive_free(void* va) {
 // lib call to naive_fork
 int fork() {
   return do_user_call(SYS_user_fork, 0, 0, 0, 0, 0, 0, 0);
+}
+
+//
+// lib call to history
+int history() {
+  return do_user_call(SYS_user_history, 0, 0, 0, 0, 0, 0, 0);
 }
 
 //

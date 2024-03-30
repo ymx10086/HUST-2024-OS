@@ -4,14 +4,17 @@
 /bin/app_touch /RAMDISK0/sub_dir/ramfile1
 /bin/app_echo /RAMDISK0/sub_dir/ramfile1
 /bin/app_cat /RAMDISK0/sub_dir/ramfile1
+/bin/app_cd /RAMDISK0
 /bin/app_ls ./sub_dir
 /bin/app_ls /RAMDISK0
+/bin/app_history
 /bin/app_pwd
-/bin/app_errorline
 /bin/app_cow
 /bin/app_semaphore
+/bin/app_sequence
+/bin/app_errorline
 /bin/app_singlepageheap
 /bin/app_cd /RAMDISK0
 /bin/app_cd ./sub_dir
 /bin/app_cd ..
-END END
+exit
