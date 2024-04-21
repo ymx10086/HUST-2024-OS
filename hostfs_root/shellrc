@@ -1,20 +1,39 @@
-/bin/app_mkdir /RAMDISK0/sub_dir
-/bin/app_mkdir /RAMDISK0/sub_dir/sub
-/bin/app_mkdir /RAMDISK0/sub_dirw
+# 创建文件目录sub_dir
+/bin/app_mkdir /RAMDISK0/sub_dir1 
+/bin/app_mkdir /RAMDISK0/sub_dir1/sub_dira
+/bin/app_touch /RAMDISK0/sub_dir1/ramfile1
+/bin/app_mkdir /RAMDISK0/sub_dir2
+# 创建文件ramfile1
 /bin/app_touch /RAMDISK0/sub_dir/ramfile1
+# 写入文件ramfile1
 /bin/app_echo /RAMDISK0/sub_dir/ramfile1
+# 读出文件ramfile1
 /bin/app_cat /RAMDISK0/sub_dir/ramfile1
+# 进入/RAMDISK0文件目录
 /bin/app_cd /RAMDISK0
+# 支持相对路径打印当前目录下sub_dir文件目录下所有文件
 /bin/app_ls ./sub_dir
+# 打印/RAMDISK0文件目录下所有文件
 /bin/app_ls /RAMDISK0
+# 显示历史命令
 /bin/app_history
+# 显示当前目录
 /bin/app_pwd
+# 验证写时复制实验
 /bin/app_cow
+# 验证信号量实验
 /bin/app_semaphore
+# 验证复杂缺页异常实验
 /bin/app_sequence
+# 验证打印异常代码行实验
 /bin/app_errorline
+# 验证打印用户程序调用栈实验
+/bin/app_backtrace
+# 验证堆空间管理实验
 /bin/app_singlepageheap
-/bin/app_cd /RAMDISK0
+# 支持相对路径进入当前目录下sub_dir文件目录
 /bin/app_cd ./sub_dir
+# 回退到上一文件目录
 /bin/app_cd ..
+# 退出shell系统
 exit

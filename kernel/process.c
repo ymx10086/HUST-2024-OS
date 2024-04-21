@@ -587,7 +587,7 @@ static void alloc_from_free(uint64 va, uint64 n){
 }
 
 // free + new_page
-static void alloc_from_free_and_g_ufree_page(uint64 va, uint64 n) {
+static void alloc_from_free_and_used(uint64 va, uint64 n) {
   uint64 hartid = read_tp();
 	remove_ptr(&(current[hartid]->user_heap.mem_free), va); 
 	mem_block* pa = (mem_block*)(user_va_to_pa((pagetable_t)current[hartid]->pagetable, (void*)va));
@@ -627,7 +627,7 @@ static void alloc_from_free_and_g_ufree_page(uint64 va, uint64 n) {
 }
 
 // new_page
-static void *alloc_from_g_ufree_page(uint64 n){
+static void *alloc_from_used(uint64 n){
 
   uint64 hartid = read_tp();
 
@@ -677,9 +677,9 @@ void *better_alloc(uint64 n){
 
   uint64 hartid = read_tp();
   
-	if (current[hartid]->user_heap.mem_free == -1) return alloc_from_g_ufree_page(n); 
+	if (current[hartid]->user_heap.mem_free == -1) return alloc_from_used(n); 
 	uint64 va = current[hartid]->user_heap.mem_free;
-	uint64 max_va = va; // record the max va
+	uint64 max_va = va;
   uint64 va_ptr;
 	while (va != -1){
 		max_va = va > max_va ? va : max_va;
@@ -696,10 +696,10 @@ void *better_alloc(uint64 n){
 	if (max_va + max_pa->cap == current[hartid]->user_heap.g_ufree_page){
 
 		va_ptr = max_va + sizeof(mem_block); 
-		alloc_from_free_and_g_ufree_page(max_va, n);
+		alloc_from_free_and_used(max_va, n);
 		return (void *)va_ptr;
 	}
-	return alloc_from_g_ufree_page(n); 
+	return alloc_from_used(n); 
 }
 
 void better_free(uint64 va){

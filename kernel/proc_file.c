@@ -366,13 +366,13 @@ int do_exec(char *path_, char *arg_){
 	int PathLen = strlen(path_);
 	char path[PathLen + 1];
 	strcpy(path, path_);
-	int ArgLen = strlen(arg_);
-	char arg[ArgLen + 1];
+	int arglen = strlen(arg_);
+	char arg[arglen + 1];
 	strcpy(arg, arg_);
   
 	exec_clean(current[hartid]);
 	
-	uint64 argv_va = current[hartid]->trapframe->regs.sp - ArgLen - 1;
+	uint64 argv_va = current[hartid]->trapframe->regs.sp - arglen - 1;
 	argv_va = argv_va - argv_va % 8; 
 	uint64 argv_pa = (uint64)user_va_to_pa(current[hartid]->pagetable, (void *)argv_va);
 	strcpy((char *)argv_pa, arg);
